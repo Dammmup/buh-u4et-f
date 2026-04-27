@@ -5,6 +5,7 @@ export type OrderStatus = "new" | "in_progress" | "need_info" | "done";
 export type CalculationBreakdownType =
   | "base"
   | "per_unit"
+  | "per_block"
   | "fixed"
   | "tiered"
   | "percentage"
@@ -26,6 +27,20 @@ export interface OrderCalculation {
   adjustmentsTotal: number;
   total: number;
   breakdown: CalculationBreakdownItem[];
+  domain?: {
+    type: string;
+    label: string;
+    currency: "KZT";
+    inputs: Record<string, number | string>;
+    values: Record<string, number | string | boolean>;
+    breakdown: Array<{
+      key: string;
+      label: string;
+      value: number | string | boolean;
+      unit?: string;
+    }>;
+    warnings?: string[];
+  };
 }
 
 export interface Order {

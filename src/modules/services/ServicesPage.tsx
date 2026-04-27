@@ -27,6 +27,7 @@ import { PageHeader } from "../../shared/components/PageHeader";
 
 const ruleLabels: Record<PricingRuleType, string> = {
   per_unit: "за единицу",
+  per_block: "за блок",
   fixed: "фиксировано",
   tiered: "ступени",
   percentage: "процент"

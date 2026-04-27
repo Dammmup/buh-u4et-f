@@ -52,7 +52,7 @@ import { StatusChip } from "../../shared/components/StatusChip";
 
 const statuses: OrderStatus[] = ["new", "in_progress", "need_info", "done"];
 const inputTypes: ServiceInputType[] = ["number", "text", "select"];
-const ruleTypes: PricingRuleType[] = ["per_unit", "fixed", "tiered", "percentage"];
+const ruleTypes: PricingRuleType[] = ["per_unit", "per_block", "fixed", "tiered", "percentage"];
 const roundingModes: RoundingMode[] = ["none", "ceil", "floor", "round"];
 const conditionOperators: PricingConditionOperator[] = ["eq", "neq", "gt", "gte", "lt", "lte", "in"];
 
@@ -65,6 +65,7 @@ const statusLabels: Record<OrderStatus, string> = {
 
 const ruleTypeLabels: Record<PricingRuleType, string> = {
   per_unit: "За единицу",
+  per_block: "За блок",
   fixed: "Фиксированная сумма",
   tiered: "Ступенчатая цена",
   percentage: "Процент от subtotal"
@@ -385,6 +386,23 @@ export function AdminPage() {
                                 </TableRow>
                               </TableBody>
                             </Table>
+                            {order.calculation.domain && (
+                              <Paper elevation={0} sx={{ p: 2, bgcolor: "background.default" }}>
+                                <Stack spacing={1}>
+                                  <Typography fontWeight={900}>{order.calculation.domain.label}</Typography>
+                                  {order.calculation.domain.breakdown.map((item) => (
+                                    <Stack key={item.key} direction="row" justifyContent="space-between" gap={2}>
+                                      <Typography color="text.secondary">{item.label}</Typography>
+                                      <Typography fontWeight={900}>
+                                        {typeof item.value === "number" && item.unit === "KZT"
+                                          ? formatMoney(item.value)
+                                          : `${String(item.value)}${item.unit && item.unit !== "KZT" ? ` ${item.unit}` : ""}`}
+                                      </Typography>
+                                    </Stack>
+                                  ))}
+                                </Stack>
+                              </Paper>
+                            )}
                           </Box>
                         </Stack>
                       </AccordionDetails>
@@ -758,8 +776,11 @@ function RuleEditor({ rule, parameters, onPatch, onDelete }: RuleEditorProps) {
           </TextField>
           <TextField label="Sort order" type="number" value={rule.sortOrder ?? 0} onChange={(event) => onPatch((current) => ({ ...current, sortOrder: Number(event.target.value) }))} />
           <TextField label="Included quantity" type="number" value={rule.includedQuantity ?? 0} onChange={(event) => onPatch((current) => ({ ...current, includedQuantity: Number(event.target.value) }))} />
-          {rule.type === "per_unit" && (
+          {(rule.type === "per_unit" || rule.type === "per_block") && (
             <TextField label="Unit price" type="number" value={rule.unitPrice ?? ""} onChange={(event) => onPatch((current) => ({ ...current, unitPrice: optionalNumber(event.target.value) }))} />
+          )}
+          {rule.type === "per_block" && (
+            <TextField label="Block size" type="number" value={rule.blockSize ?? 1} onChange={(event) => onPatch((current) => ({ ...current, blockSize: Number(event.target.value) }))} />
           )}
           {rule.type === "fixed" && (
             <TextField label="Amount" type="number" value={rule.amount ?? ""} onChange={(event) => onPatch((current) => ({ ...current, amount: optionalNumber(event.target.value) }))} />

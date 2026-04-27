@@ -1,8 +1,16 @@
 export type ServiceInputType = "number" | "text" | "select";
 export type PricingFormula = "rules_sum" | "linear";
-export type PricingRuleType = "per_unit" | "fixed" | "tiered" | "percentage";
+export type PricingRuleType = "per_unit" | "per_block" | "fixed" | "tiered" | "percentage";
 export type PricingConditionOperator = "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "in";
 export type RoundingMode = "none" | "ceil" | "floor" | "round";
+export type DomainCalculationType =
+  | "sole_proprietor_simplified_tax"
+  | "too_cit"
+  | "payroll"
+  | "patent_911"
+  | "property_tax"
+  | "retail_tax_913"
+  | "income_total";
 
 export interface ServiceParameter {
   key: string;
@@ -38,6 +46,7 @@ export interface PricingRule {
   unitPrice?: number;
   amount?: number;
   includedQuantity?: number;
+  blockSize?: number;
   rate?: number;
   tiers?: PricingTier[];
   conditions?: PricingCondition[];
@@ -66,4 +75,9 @@ export interface AccountingService {
   isActive: boolean;
   parameters: ServiceParameter[];
   pricing: ServicePricing;
+  domainCalculation?: {
+    type: DomainCalculationType;
+    label: string;
+    defaults?: Record<string, number | string>;
+  };
 }

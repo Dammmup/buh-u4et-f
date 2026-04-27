@@ -331,6 +331,28 @@ export function OrdersPage() {
                         </TableRow>
                       </TableBody>
                     </Table>
+                    {order.calculation.domain && (
+                      <Paper elevation={0} sx={{ p: 2, bgcolor: "background.default" }}>
+                        <Stack spacing={1.5}>
+                          <Typography fontWeight={900}>{order.calculation.domain.label}</Typography>
+                          {order.calculation.domain.warnings?.map((warning) => (
+                            <Alert key={warning} severity="warning">
+                              {warning}
+                            </Alert>
+                          ))}
+                          {order.calculation.domain.breakdown.map((item) => (
+                            <Stack key={item.key} direction="row" justifyContent="space-between" gap={2}>
+                              <Typography color="text.secondary">{item.label}</Typography>
+                              <Typography fontWeight={900}>
+                                {typeof item.value === "number" && item.unit === "KZT"
+                                  ? formatMoney(item.value)
+                                  : `${String(item.value)}${item.unit && item.unit !== "KZT" ? ` ${item.unit}` : ""}`}
+                              </Typography>
+                            </Stack>
+                          ))}
+                        </Stack>
+                      </Paper>
+                    )}
                   </Stack>
                 </Box>
               </AccordionDetails>

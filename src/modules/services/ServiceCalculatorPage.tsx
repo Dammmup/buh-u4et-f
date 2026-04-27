@@ -335,6 +335,36 @@ export function ServiceCalculatorPage() {
                   ))}
                 </TableBody>
               </Table>
+
+              {calculation?.domain && (
+                <>
+                  <Divider />
+                  <Stack spacing={1.5}>
+                    <Typography variant="h6">{calculation.domain.label}</Typography>
+                    {calculation.domain.warnings?.map((warning) => (
+                      <Alert key={warning} severity="warning">
+                        {warning}
+                      </Alert>
+                    ))}
+                    <Table size="small">
+                      <TableBody>
+                        {calculation.domain.breakdown.map((item) => (
+                          <TableRow key={item.key}>
+                            <TableCell>{item.label}</TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2" fontWeight={900}>
+                                {typeof item.value === "number" && item.unit === "KZT"
+                                  ? formatMoney(item.value)
+                                  : `${String(item.value)}${item.unit && item.unit !== "KZT" ? ` ${item.unit}` : ""}`}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Stack>
+                </>
+              )}
             </Stack>
           </CardContent>
         </Card>
