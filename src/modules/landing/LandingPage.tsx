@@ -1,0 +1,1116 @@
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ArticleIcon from "@mui/icons-material/Article";
+import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import BusinessIcon from "@mui/icons-material/Business";
+import CalculateIcon from "@mui/icons-material/Calculate";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
+import GroupsIcon from "@mui/icons-material/Groups";
+import MailIcon from "@mui/icons-material/Mail";
+import MenuIcon from "@mui/icons-material/Menu";
+import PhoneIcon from "@mui/icons-material/Phone";
+import PlaceIcon from "@mui/icons-material/Place";
+import QuestionAnswerIcon from "@mui/icons-material/QuestionAnswer";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import RestoreIcon from "@mui/icons-material/Restore";
+import SearchIcon from "@mui/icons-material/Search";
+import SecurityIcon from "@mui/icons-material/Security";
+import SendIcon from "@mui/icons-material/Send";
+import SettingsIcon from "@mui/icons-material/Settings";
+import ShieldIcon from "@mui/icons-material/Shield";
+import StarIcon from "@mui/icons-material/Star";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Alert,
+  AppBar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Container,
+  CircularProgress,
+  Divider,
+  IconButton,
+  LinearProgress,
+  Link,
+  Paper,
+  Stack,
+  TextField,
+  Toolbar,
+  Typography
+} from "@mui/material";
+import { FormEvent, ReactNode, useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
+import { api } from "../../shared/api/client";
+
+const navItems = [
+  { label: "Услуги", target: "services" },
+  { label: "Прайс", target: "price-list" },
+  { label: "Тарифы", target: "pricing" },
+  { label: "Как работаем", target: "how-it-works" },
+  { label: "FAQ", target: "faq" }
+];
+
+const serviceCards = [
+  {
+    icon: <ArticleIcon />,
+    title: "Бухгалтерское сопровождение",
+    description: "Полный цикл учета от первичных документов до отчетности."
+  },
+  {
+    icon: <RestoreIcon />,
+    title: "Восстановление учета",
+    description: "Приведение в порядок запущенной бухгалтерии любой сложности."
+  },
+  {
+    icon: <GroupsIcon />,
+    title: "Кадровый учет и зарплаты",
+    description: "Расчет зарплат, налогов, взносов и отчетность по сотрудникам."
+  },
+  {
+    icon: <CalculateIcon />,
+    title: "Налоговая отчетность",
+    description: "Формы 910, 300, 328 и другие декларации с прозрачным расчетом."
+  },
+  {
+    icon: <AssignmentTurnedInIcon />,
+    title: "Первичная документация",
+    description: "Проверка, формирование и контроль корректности документов."
+  },
+  {
+    icon: <ShieldIcon />,
+    title: "Проверка контрагентов",
+    description: "Минимизация налоговых рисков перед сделками и оплатами."
+  }
+];
+
+const stats = [
+  { icon: <AccountBalanceIcon />, value: "7+", label: "лет опыта", description: "Работаем с 2019 года" },
+  { icon: <GroupsIcon />, value: "100+", label: "клиентов", description: "Доверяют нам свой учет" },
+  {
+    icon: <TrendingDownIcon />,
+    value: "до 70%",
+    label: "экономии",
+    description: "По сравнению со штатным бухгалтером"
+  },
+  { icon: <SecurityIcon />, value: "0", label: "налоговых рисков", description: "Снижаем риск штрафов" }
+];
+
+const priceList = [
+  {
+    icon: <ArticleIcon />,
+    title: "Отчет в налоговые органы",
+    items: [
+      { name: "Любая форма «нулевка»", price: "5 000 тг" },
+      { name: "Форма 911 Расчет стоимости патента", price: "10 000 тг" },
+      { name: "Форма 300 по данным портала ИС ЭСФ", price: "30 000 тг" },
+      { name: "Плюс за каждого работника", price: "1 500 тг" },
+      { name: "Форма 910 без работников", price: "7 000 тг" },
+      { name: "Форма 200 без работников", price: "7 000 тг" },
+      { name: "Плюс расчет дохода по ОФД и выпискам", price: "10 000 тг" },
+      { name: "Комплексная бухгалтерская услуга", price: "50 000 тг" },
+      { name: "Форма 328 (до 10 строк)", price: "20 000 тг" },
+      { name: "Форма 700 (земля, имущество, транспорт)", price: "15 000 тг" },
+      { name: "Форма 701", price: "15 000 тг" },
+      { name: "Форма 913 СНР розничного налога", price: "20 000 тг" },
+      { name: "Дополнительная строка для формы 328", price: "1 000 тг" },
+      { name: "Форма 870 (эмиссия)", price: "15 000 тг" }
+    ]
+  },
+  {
+    icon: <ReceiptLongIcon />,
+    title: "ЭСФ, СНТ, АВР",
+    items: [
+      { name: "Регистрация на портале ИС ЭСФ", price: "5 000 тг" },
+      { name: "ЭСФ плюс за каждые 5 позиций", price: "1 000 тг" },
+      { name: "СНТ плюс за каждые 5 позиций", price: "1 000 тг" },
+      { name: "Выписка документа 1-10 позиций", price: "5 000 тг" },
+      { name: "АВР бумажный, электронный 1-10 позиций", price: "5 000 тг" }
+    ]
+  },
+  {
+    icon: <BusinessIcon />,
+    title: "Лицензия на алкоголь",
+    items: [
+      { name: "Получение", price: "60 000 тг" },
+      { name: "Закрытие", price: "10 000 тг" }
+    ]
+  },
+  {
+    icon: <CalculateIcon />,
+    title: "Регистрация/ликвидация",
+    items: [
+      {
+        name: "Регистрация ТОО: устав на русском и казахском, решение учредителя, приказ о назначении, справка о госрегистрации",
+        price: "30 000 тг"
+      },
+      { name: "Регистрация ИП плюс настройка Kaspi Pay", price: "10 000 тг" },
+      { name: "Регистрация ИП", price: "5 000 тг" },
+      { name: "Ликвидация ТОО", price: "80 000 тг" },
+      { name: "Ликвидация ИП", price: "20 000 тг" }
+    ]
+  },
+  {
+    icon: <GroupsIcon />,
+    title: "Кадровый учет",
+    items: [
+      { name: "Оформление изменения штатного расписания", price: "10 000 тг" },
+      { name: "Разработка/изменение должностной инструкции", price: "20 000 тг" },
+      { name: "Расчет заработной платы по системе оплаты труда заказчика", price: "5 000 тг" },
+      { name: "Ввод данных в систему Enbek.kz", price: "4 000 тг" },
+      { name: "Разработка/изменение шаблона трудового договора", price: "10 000 тг" },
+      { name: "Оформление изменения размера заработной платы", price: "5 000 тг" },
+      { name: "Расчет в сокращенные сроки", price: "4 000 тг" },
+      { name: "Формирование справки о доходах", price: "2 000 тг" },
+      { name: "Формирование справки о доходах в банк", price: "5 000 тг" },
+      { name: "Справка о доходах за два года для расчета пособий", price: "10 000 тг" }
+    ]
+  },
+  {
+    icon: <BarChartIcon />,
+    title: "Статистическая отчетность",
+    items: [
+      { name: "Формирование и сдача статистической отчетности по электронным каналам", price: "15 000 тг" },
+      { name: "Отчетность в Нацбанк 1-ПБ", price: "50 000 тг" },
+      { name: "Формирование и сдача нулевой отчетности", price: "5 000 тг" },
+      { name: "Постановка на учет ККМ: ReKassa, налоговая, настройка приложения", price: "10 000 тг" }
+    ]
+  }
+];
+
+const pricing = [
+  {
+    name: "Старт",
+    price: "45 000",
+    description: "Для начинающих предпринимателей",
+    features: ["Ведение учета ИП", "До 50 операций в месяц", "Налоговая отчетность", "Консультации", "Личный кабинет"]
+  },
+  {
+    name: "Бизнес",
+    price: "85 000",
+    description: "Оптимальное решение для ТОО",
+    highlighted: true,
+    features: [
+      "Полное ведение учета ТОО",
+      "До 200 операций в месяц",
+      "Отчетность и платежи",
+      "Кадровый учет до 10 человек",
+      "Приоритетная поддержка",
+      "Персональный менеджер"
+    ]
+  },
+  {
+    name: "Главный бухгалтер",
+    price: "от 150 000",
+    description: "Для крупного бизнеса",
+    features: [
+      "Безлимитное количество операций",
+      "Полный кадровый учет",
+      "Финансовый анализ",
+      "Налоговая оптимизация",
+      "Выделенный бухгалтер",
+      "Выезд на встречи"
+    ]
+  }
+];
+
+const workflow = [
+  {
+    icon: <QuestionAnswerIcon />,
+    number: "01",
+    title: "Заявка",
+    description: "Вы оставляете заявку или регистрируетесь в кабинете. Мы быстро уточняем задачу."
+  },
+  {
+    icon: <SearchIcon />,
+    number: "02",
+    title: "Анализ",
+    description: "Проверяем объем документов, параметры услуги и рассчитываем стоимость."
+  },
+  {
+    icon: <SettingsIcon />,
+    number: "03",
+    title: "Настройка",
+    description: "Подключаем подписку, создаем заказ и собираем необходимые файлы."
+  },
+  {
+    icon: <TrendingUpIcon />,
+    number: "04",
+    title: "Ведение учета",
+    description: "Бухгалтер берет заказ в работу, а клиент отслеживает статус онлайн."
+  }
+];
+
+const reviews = [
+  {
+    name: "Алексей Иванов",
+    position: 'Директор, ТОО "СтройМонтаж"',
+    text: "Теперь просто отправляю документы и получаю готовые отчеты. Экономия времени колоссальная."
+  },
+  {
+    name: "Мария Петрова",
+    position: "ИП, интернет-магазин",
+    text: "Никаких штрафов, все отчеты вовремя, а я спокойно занимаюсь продажами."
+  },
+  {
+    name: "Дмитрий Сергеев",
+    position: 'Учредитель, ТОО "ТехноПро"',
+    text: "Восстановили учет за два года и теперь ведут бухгалтерию на постоянной основе."
+  }
+];
+
+const faq = [
+  {
+    question: "Как быстро можно начать работу?",
+    answer: "После регистрации и подключения подписки можно создать заказ сразу. Обычно первичная обработка начинается в течение 1-3 рабочих дней."
+  },
+  {
+    question: "Что входит в стоимость услуг?",
+    answer: "Стоимость складывается из базовой цены услуги и параметров: сотрудников, строк, товарных позиций или дополнительных приложений."
+  },
+  {
+    question: "Как передавать документы?",
+    answer: "Документы загружаются в личном кабинете и автоматически привязываются к конкретному заказу."
+  },
+  {
+    question: "Как контролировать работу бухгалтера?",
+    answer: "В кабинете видны статусы заказов, расчеты, комментарии и история загруженных документов."
+  }
+];
+
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+}
+
+function SectionTitle({ title, subtitle, light = false }: { title: string; subtitle: string; light?: boolean }) {
+  return (
+    <Stack spacing={2} alignItems="center" textAlign="center" mb={{ xs: 5, md: 8 }}>
+      <Typography variant="h3" color={light ? "white" : "text.primary"} sx={{ fontSize: { xs: 30, md: 40 } }}>
+        {title}
+      </Typography>
+      <Typography color={light ? "primary.light" : "text.secondary"} sx={{ maxWidth: 720, fontSize: 18 }}>
+        {subtitle}
+      </Typography>
+    </Stack>
+  );
+}
+
+function IconTile({ children, color = "primary" }: { children: ReactNode; color?: "primary" | "secondary" }) {
+  return (
+    <Box
+      sx={{
+        width: 56,
+        height: 56,
+        borderRadius: 3,
+        bgcolor: color === "primary" ? "primary.light" : "secondary.light",
+        color: color === "primary" ? "primary.main" : "secondary.main",
+        display: "grid",
+        placeItems: "center",
+        "& svg": { fontSize: 29 }
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+function LeadQuiz() {
+  const [step, setStep] = useState(1);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [answers, setAnswers] = useState({
+    businessType: "",
+    employees: "",
+    services: [] as string[],
+    name: "",
+    phone: ""
+  });
+
+  const toggleService = (service: string) => {
+    setAnswers((current) => ({
+      ...current,
+      services: current.services.includes(service)
+        ? current.services.filter((item) => item !== service)
+        : [...current.services, service]
+    }));
+  };
+
+  const progress = (step / 5) * 100;
+  const canContinue =
+    (step === 1 && answers.businessType) ||
+    (step === 2 && answers.employees) ||
+    (step === 3 && answers.services.length > 0) ||
+    (step === 4 && answers.name) ||
+    (step === 5 && answers.phone);
+
+  const submitQuiz = async () => {
+    setSubmitting(true);
+    setError("");
+    try {
+      await api.post("/leads", {
+        source: "landing_quiz",
+        name: answers.name,
+        phone: answers.phone,
+        businessType: answers.businessType,
+        employees: answers.employees,
+        services: answers.services
+      });
+      setSubmitted(true);
+    } catch {
+      setError("Не удалось отправить заявку. Попробуйте еще раз или напишите нам в WhatsApp.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <Box id="quiz" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "primary.dark" }}>
+        <Container maxWidth="md">
+          <Card sx={{ textAlign: "center" }}>
+            <CardContent sx={{ p: { xs: 4, md: 6 } }}>
+              <Stack spacing={3} alignItems="center">
+                <IconTile>
+                  <SendIcon />
+                </IconTile>
+                <Typography variant="h4">Спасибо за вашу заявку!</Typography>
+                <Typography color="text.secondary">
+                  Специалист свяжется с вами и предложит подходящий формат сопровождения.
+                </Typography>
+                <Button onClick={() => setSubmitted(false)}>Начать заново</Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Container>
+      </Box>
+    );
+  }
+
+  return (
+    <Box id="quiz" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "primary.dark" }}>
+      <Container maxWidth="md">
+        <SectionTitle
+          title="Подберем решение для вашего бизнеса"
+          subtitle="Ответьте на 5 вопросов и получите индивидуальное предложение"
+          light
+        />
+        <Card>
+          <CardContent sx={{ p: { xs: 3, md: 6 } }}>
+            <Stack spacing={4}>
+              <Box>
+                <Stack direction="row" justifyContent="space-between" mb={1}>
+                  <Typography color="text.secondary">Шаг {step} из 5</Typography>
+                  <Typography color="primary" fontWeight={800}>
+                    {Math.round(progress)}%
+                  </Typography>
+                </Stack>
+                <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 99 }} />
+              </Box>
+
+              {step === 1 && (
+                <QuizOptions
+                  title="Тип вашего бизнеса"
+                  options={["ИП", "ТОО"]}
+                  selected={[answers.businessType]}
+                  onSelect={(value) => setAnswers((current) => ({ ...current, businessType: value }))}
+                />
+              )}
+              {step === 2 && (
+                <QuizOptions
+                  title="Количество сотрудников"
+                  options={["Без сотрудников", "1-5 человек", "6-20 человек", "Более 20 человек"]}
+                  selected={[answers.employees]}
+                  onSelect={(value) => setAnswers((current) => ({ ...current, employees: value }))}
+                />
+              )}
+              {step === 3 && (
+                <QuizOptions
+                  title="Какие услуги вам нужны?"
+                  options={[
+                    "Бухгалтерское сопровождение",
+                    "Кадровый учет",
+                    "Налоговая отчетность",
+                    "Восстановление учета",
+                    "Первичная документация",
+                    "Консультации"
+                  ]}
+                  selected={answers.services}
+                  multi
+                  onSelect={toggleService}
+                />
+              )}
+              {step === 4 && (
+                <Stack spacing={2}>
+                  <Typography variant="h5">Как к вам обращаться?</Typography>
+                  <TextField
+                    placeholder="Ваше имя"
+                    value={answers.name}
+                    onChange={(event) => setAnswers((current) => ({ ...current, name: event.target.value }))}
+                    fullWidth
+                  />
+                </Stack>
+              )}
+              {step === 5 && (
+                <Stack spacing={2}>
+                  <Typography variant="h5">Номер телефона</Typography>
+                  <TextField
+                    placeholder="+7 (___) ___-__-__"
+                    value={answers.phone}
+                    onChange={(event) => setAnswers((current) => ({ ...current, phone: event.target.value }))}
+                    fullWidth
+                  />
+                </Stack>
+              )}
+
+              {error && <Alert severity="error">{error}</Alert>}
+
+              <Stack direction="row" justifyContent="space-between">
+                {step > 1 ? <Button onClick={() => setStep((current) => current - 1)}>Назад</Button> : <Box />}
+                {step < 5 ? (
+                  <Button variant="contained" endIcon={<ArrowForwardIcon />} disabled={!canContinue} onClick={() => setStep((current) => current + 1)}>
+                    Далее
+                  </Button>
+                ) : (
+                  <Button color="secondary" variant="contained" disabled={!canContinue || submitting} onClick={submitQuiz}>
+                    {submitting ? <CircularProgress size={22} color="inherit" /> : "Получить решение"}
+                  </Button>
+                )}
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
+  );
+}
+
+function QuizOptions({
+  title,
+  options,
+  selected,
+  onSelect,
+  multi = false
+}: {
+  title: string;
+  options: string[];
+  selected: string[];
+  onSelect: (value: string) => void;
+  multi?: boolean;
+}) {
+  return (
+    <Stack spacing={2}>
+      <Typography variant="h5">{title}</Typography>
+      {multi && <Typography color="text.secondary">Можно выбрать несколько вариантов</Typography>}
+      <Box display="grid" gridTemplateColumns={{ xs: "1fr", sm: "repeat(2, 1fr)" }} gap={2}>
+        {options.map((option) => {
+          const active = selected.includes(option);
+          return (
+            <Button
+              key={option}
+              onClick={() => onSelect(option)}
+              variant="outlined"
+              startIcon={active ? <CheckIcon /> : undefined}
+              sx={{
+                justifyContent: "flex-start",
+                minHeight: 64,
+                borderWidth: 2,
+                bgcolor: active ? "primary.light" : "white",
+                borderColor: active ? "primary.main" : "#E5E7EB",
+                color: "text.primary",
+                "&:hover": { borderWidth: 2 }
+              }}
+            >
+              {option}
+            </Button>
+          );
+        })}
+      </Box>
+    </Stack>
+  );
+}
+
+export function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+  const [contactError, setContactError] = useState("");
+  const [contactForm, setContactForm] = useState({
+    name: "",
+    phone: "",
+    message: ""
+  });
+
+  const handleContact = async (event: FormEvent) => {
+    event.preventDefault();
+    setContactSubmitting(true);
+    setContactError("");
+    try {
+      await api.post("/leads", {
+        source: "landing_contact",
+        name: contactForm.name,
+        phone: contactForm.phone,
+        message: contactForm.message
+      });
+      setContactSubmitted(true);
+      setContactForm({ name: "", phone: "", message: "" });
+      window.setTimeout(() => setContactSubmitted(false), 3000);
+    } catch {
+      setContactError("Не удалось отправить заявку. Попробуйте позже или напишите нам в WhatsApp.");
+    } finally {
+      setContactSubmitting(false);
+    }
+  };
+
+  const handleNav = (target: string) => {
+    scrollToSection(target);
+    setMobileMenuOpen(false);
+  };
+
+  return (
+    <Box bgcolor="white">
+      <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: "1px solid #E5E7EB" }}>
+        <Container maxWidth="xl">
+          <Toolbar disableGutters sx={{ minHeight: 64 }}>
+            <Typography variant="h6" color="primary" sx={{ fontWeight: 900, flex: { xs: 1, md: "initial" }, mr: 5 }}>
+              Buh Service
+            </Typography>
+            <Stack direction="row" spacing={4} sx={{ display: { xs: "none", md: "flex" }, flex: 1 }}>
+              {navItems.map((item) => (
+                <Button key={item.target} color="inherit" onClick={() => handleNav(item.target)}>
+                  {item.label}
+                </Button>
+              ))}
+            </Stack>
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ display: { xs: "none", md: "flex" } }}>
+              <Link href="tel:+77001234567" color="text.secondary" underline="none" display="flex" alignItems="center">
+                <PhoneIcon sx={{ fontSize: 18, mr: 1 }} />
+                +7 (700) 123-45-67
+              </Link>
+              <Button variant="contained" onClick={() => handleNav("contact")}>
+                Консультация
+              </Button>
+              <Button component={RouterLink} to="/login" variant="outlined">
+                Войти
+              </Button>
+            </Stack>
+            <IconButton sx={{ display: { xs: "inline-flex", md: "none" } }} onClick={() => setMobileMenuOpen((value) => !value)}>
+              {mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
+            </IconButton>
+          </Toolbar>
+        </Container>
+        {mobileMenuOpen && (
+          <Box sx={{ display: { xs: "block", md: "none" }, bgcolor: "white", borderTop: "1px solid #E5E7EB" }}>
+            <Container sx={{ py: 2 }}>
+              <Stack spacing={1}>
+                {navItems.map((item) => (
+                  <Button key={item.target} color="inherit" onClick={() => handleNav(item.target)} sx={{ justifyContent: "flex-start" }}>
+                    {item.label}
+                  </Button>
+                ))}
+                <Button variant="contained" onClick={() => handleNav("contact")}>
+                  Консультация
+                </Button>
+                <Button component={RouterLink} to="/login" variant="outlined">
+                  Войти
+                </Button>
+              </Stack>
+            </Container>
+          </Box>
+        )}
+      </AppBar>
+
+      <Box
+        component="section"
+        sx={{
+          overflow: "hidden",
+          py: { xs: 8, md: 14 },
+          background: "linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 68%)"
+        }}
+      >
+        <Container maxWidth="xl">
+          <Box display="grid" gridTemplateColumns={{ xs: "1fr", lg: "1fr 0.9fr" }} gap={{ xs: 6, md: 10 }} alignItems="center">
+            <Stack spacing={4}>
+              <Chip label="Для ИП и ТОО" color="primary" sx={{ alignSelf: "flex-start", bgcolor: "primary.light", color: "primary.main" }} />
+              <Typography variant="h1" sx={{ fontSize: { xs: 38, md: 58 }, lineHeight: 1.05, maxWidth: 760 }}>
+                Передайте бухгалтерию на аутсорс и сосредоточьтесь на бизнесе
+              </Typography>
+              <Typography color="text.secondary" sx={{ fontSize: 18, lineHeight: 1.7, maxWidth: 700 }}>
+                Полное ведение бухгалтерского и налогового учета с минимизацией рисков.
+                Клиент оплачивает подписку, рассчитывает услуги и передает документы онлайн.
+              </Typography>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <Button component={RouterLink} to="/register" variant="contained" size="large" endIcon={<ArrowForwardIcon />}>
+                  Получить консультацию
+                </Button>
+                <Button
+                  href="https://wa.me/77001234567"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="secondary"
+                  variant="contained"
+                  size="large"
+                  startIcon={<WhatsAppIcon />}
+                >
+                  Написать в WhatsApp
+                </Button>
+              </Stack>
+              <Stack direction="row" flexWrap="wrap" gap={{ xs: 3, md: 5 }} pt={1}>
+                {[
+                  ["7+", "лет опыта"],
+                  ["100+", "клиентов"],
+                  ["до 70%", "экономии"]
+                ].map(([value, label]) => (
+                  <Box key={label}>
+                    <Typography variant="h4" color="primary">
+                      {value}
+                    </Typography>
+                    <Typography color="text.secondary">{label}</Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </Stack>
+
+            <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, border: "1px solid #F3F4F6", boxShadow: "0 25px 50px -12px rgba(17, 24, 39, 0.18)" }}>
+              <Stack spacing={2.5}>
+                {[
+                  ["Защита от налоговых рисков", "Проверка каждой операции", "primary"],
+                  ["Экономия времени", "Полный цикл учета", "secondary"],
+                  ["Персональный бухгалтер", "Всегда на связи", "primary"]
+                ].map(([title, subtitle, color]) => (
+                  <Stack
+                    key={title}
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{ p: 2, bgcolor: color === "secondary" ? "#FFFBEB" : "#EFF6FF", borderRadius: 2 }}
+                  >
+                    <Box
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 2,
+                        display: "grid",
+                        placeItems: "center",
+                        bgcolor: color === "secondary" ? "secondary.main" : "primary.main",
+                        color: "white"
+                      }}
+                    >
+                      <CheckIcon />
+                    </Box>
+                    <Box>
+                      <Typography fontWeight={800}>{title}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {subtitle}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                ))}
+                <Divider />
+                <Box display="grid" gridTemplateColumns="repeat(3, 1fr)" gap={2}>
+                  {["Подписка", "Калькулятор", "Документы"].map((item) => (
+                    <Box key={item} textAlign="center">
+                      <Typography color="primary" fontWeight={900}>
+                        ✓
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {item}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </Stack>
+            </Paper>
+          </Box>
+        </Container>
+      </Box>
+
+      <LeadQuiz />
+
+      <Box id="services" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "white" }}>
+        <Container maxWidth="xl">
+          <SectionTitle title="Наши услуги" subtitle="Полный спектр бухгалтерских услуг для вашего бизнеса" />
+          <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={3}>
+            {serviceCards.map((service) => (
+              <Card key={service.title} sx={{ transition: "0.2s", "&:hover": { borderColor: "primary.main", transform: "translateY(-4px)" } }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Stack spacing={2.5}>
+                    <IconTile>{service.icon}</IconTile>
+                    <Typography variant="h5">{service.title}</Typography>
+                    <Typography color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                      {service.description}
+                    </Typography>
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+        </Container>
+      </Box>
+
+      <Box component="section" sx={{ py: { xs: 8, md: 10 }, background: "linear-gradient(135deg, #1E3A8A 0%, #172554 100%)" }}>
+        <Container maxWidth="xl">
+          <SectionTitle title="Почему выбирают нас" subtitle="Цифры, которые говорят о надежности сервиса" light />
+          <Box display="grid" gridTemplateColumns={{ xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={3}>
+            {stats.map((stat) => (
+              <Paper key={stat.label} elevation={0} sx={{ p: 4, textAlign: "center", bgcolor: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "white" }}>
+                <Stack spacing={2} alignItems="center">
+                  <Box sx={{ width: 64, height: 64, borderRadius: 3, display: "grid", placeItems: "center", bgcolor: "rgba(255,255,255,0.18)" }}>{stat.icon}</Box>
+                  <Typography variant="h3">{stat.value}</Typography>
+                  <Typography sx={{ color: "#DBEAFE", fontSize: 20 }}>{stat.label}</Typography>
+                  <Typography variant="body2" sx={{ color: "#BFDBFE" }}>
+                    {stat.description}
+                  </Typography>
+                </Stack>
+              </Paper>
+            ))}
+          </Box>
+        </Container>
+      </Box>
+
+      <Box id="price-list" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "white" }}>
+        <Container maxWidth="xl">
+          <SectionTitle title="Прайс-лист услуг" subtitle="Прозрачные цены на все виды бухгалтерских услуг" />
+          <Stack spacing={3}>
+            {priceList.map((category) => (
+              <Card key={category.title} sx={{ overflow: "hidden", boxShadow: "0 10px 15px -3px rgba(17, 24, 39, 0.1)", "&:hover": { borderColor: "primary.main" } }}>
+                <Box sx={{ p: 3, background: "linear-gradient(90deg, #1E3A8A 0%, #1E40AF 100%)", color: "white" }}>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Box sx={{ width: 48, height: 48, borderRadius: 3, bgcolor: "rgba(255,255,255,0.18)", display: "grid", placeItems: "center" }}>
+                      {category.icon}
+                    </Box>
+                    <Typography variant="h5" color="white">
+                      {category.title}
+                    </Typography>
+                  </Stack>
+                </Box>
+                <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                  <Stack spacing={0.5}>
+                    {category.items.map((item) => (
+                      <Stack
+                        key={`${category.title}-${item.name}`}
+                        direction={{ xs: "column", sm: "row" }}
+                        justifyContent="space-between"
+                        alignItems={{ xs: "flex-start", sm: "flex-start" }}
+                        gap={1.5}
+                        sx={{
+                          px: 2,
+                          py: 1.75,
+                          borderBottom: "1px solid #F3F4F6",
+                          borderRadius: 2,
+                          transition: "0.15s",
+                          "&:hover": { bgcolor: "background.default" },
+                          "&:last-child": { borderBottom: 0 }
+                        }}
+                      >
+                        <Typography color="text.secondary" sx={{ pr: { sm: 3 }, lineHeight: 1.55 }}>
+                          {item.name}
+                        </Typography>
+                        <Typography color="secondary.dark" fontWeight={900} sx={{ whiteSpace: "nowrap" }}>
+                          {item.price}
+                        </Typography>
+                      </Stack>
+                    ))}
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+          </Stack>
+          <Paper elevation={0} sx={{ mt: 5, p: { xs: 4, md: 6 }, textAlign: "center", color: "white", background: "linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%)" }}>
+            <Typography variant="h4">Нужна консультация по ценам?</Typography>
+            <Typography sx={{ color: "#DBEAFE", mt: 2, mb: 3 }}>
+              Свяжитесь с нами, и мы подберем оптимальное решение для вашего бизнеса.
+            </Typography>
+            <Button color="secondary" variant="contained" size="large" onClick={() => scrollToSection("contact")}>
+              Получить консультацию
+            </Button>
+          </Paper>
+        </Container>
+      </Box>
+
+      <Box id="pricing" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "background.default" }}>
+        <Container maxWidth="xl">
+          <SectionTitle title="Тарифы" subtitle="Выберите подходящий формат бухгалтерского сопровождения" />
+          <Box display="grid" gridTemplateColumns={{ xs: "1fr", lg: "repeat(3, 1fr)" }} gap={3}>
+            {pricing.map((plan) => (
+              <Card key={plan.name} sx={{ position: "relative", overflow: "hidden", borderColor: plan.highlighted ? "primary.main" : "#F3F4F6", transform: { lg: plan.highlighted ? "scale(1.035)" : "none" } }}>
+                {plan.highlighted && (
+                  <Box sx={{ position: "absolute", top: 0, right: 0, px: 2, py: 0.5, bgcolor: "secondary.main", color: "white", fontWeight: 800 }}>
+                    Популярный
+                  </Box>
+                )}
+                <CardContent sx={{ p: 4 }}>
+                  <Stack spacing={3}>
+                    <Box>
+                      <Typography variant="h5">{plan.name}</Typography>
+                      <Typography color="text.secondary" mt={1}>
+                        {plan.description}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography component="span" variant="h3">
+                        {plan.price}
+                      </Typography>
+                      <Typography component="span" color="text.secondary">
+                        {" "}
+                        ₸/мес
+                      </Typography>
+                    </Box>
+                    <Stack spacing={1.5}>
+                      {plan.features.map((feature) => (
+                        <Stack key={feature} direction="row" spacing={1.5} alignItems="flex-start">
+                          <CheckIcon color="primary" fontSize="small" sx={{ mt: 0.3 }} />
+                          <Typography color="text.secondary">{feature}</Typography>
+                        </Stack>
+                      ))}
+                    </Stack>
+                    <Button component={RouterLink} to="/register" variant={plan.highlighted ? "contained" : "outlined"}>
+                      Выбрать тариф
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+        </Container>
+      </Box>
+
+      <Box id="how-it-works" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "white" }}>
+        <Container maxWidth="xl">
+          <SectionTitle title="Как мы работаем" subtitle="Простой процесс от заявки до полного ведения учета" />
+          <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={3}>
+            {workflow.map((step) => (
+              <Card key={step.number} sx={{ "&:hover": { borderColor: "primary.main" } }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Stack spacing={2.5}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <IconTile>{step.icon}</IconTile>
+                      <Typography variant="h2" color="primary.light">
+                        {step.number}
+                      </Typography>
+                    </Stack>
+                    <Typography variant="h5">{step.title}</Typography>
+                    <Typography color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                      {step.description}
+                    </Typography>
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+          <Paper elevation={0} sx={{ mt: 6, p: { xs: 4, md: 6 }, textAlign: "center", bgcolor: "primary.light" }}>
+            <Typography variant="h4">Начнем работу уже сегодня</Typography>
+            <Typography color="text.secondary" mt={2} mb={3}>
+              Зарегистрируйтесь, подключите подписку и создайте первый заказ в кабинете.
+            </Typography>
+            <Button component={RouterLink} to="/register" variant="contained" size="large">
+              Открыть кабинет
+            </Button>
+          </Paper>
+        </Container>
+      </Box>
+
+      <Box component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "background.default" }}>
+        <Container maxWidth="xl">
+          <SectionTitle title="Отзывы клиентов" subtitle="Нам доверяют предприниматели из разных сфер бизнеса" />
+          <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(3, 1fr)" }} gap={3}>
+            {reviews.map((review) => (
+              <Card key={review.name}>
+                <CardContent sx={{ p: 4, position: "relative" }}>
+                  <FormatQuoteIcon sx={{ position: "absolute", top: 24, right: 24, color: "primary.light", fontSize: 48 }} />
+                  <Stack spacing={2.5}>
+                    <Stack direction="row" spacing={0.5}>
+                      {[1, 2, 3, 4, 5].map((item) => (
+                        <StarIcon key={item} color="secondary" fontSize="small" />
+                      ))}
+                    </Stack>
+                    <Typography color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                      "{review.text}"
+                    </Typography>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Box sx={{ width: 48, height: 48, borderRadius: "50%", bgcolor: "primary.main", color: "white", display: "grid", placeItems: "center", fontWeight: 900 }}>
+                        {review.name.charAt(0)}
+                      </Box>
+                      <Box>
+                        <Typography fontWeight={800}>{review.name}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {review.position}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+        </Container>
+      </Box>
+
+      <Box id="faq" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "white" }}>
+        <Container maxWidth="md">
+          <SectionTitle title="Частые вопросы" subtitle="Ответы на популярные вопросы о сервисе" />
+          <Stack spacing={2}>
+            {faq.map((item) => (
+              <Accordion key={item.question} disableGutters elevation={0} sx={{ border: "2px solid #F3F4F6", borderRadius: "12px !important", overflow: "hidden", "&:before": { display: "none" } }}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon color="primary" />}>
+                  <Typography fontWeight={800}>{item.question}</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                    {item.answer}
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
+            ))}
+          </Stack>
+        </Container>
+      </Box>
+
+      <Box id="contact" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "background.default" }}>
+        <Container maxWidth="xl">
+          <SectionTitle title="Свяжитесь с нами" subtitle="Оставьте заявку и получите бесплатную консультацию" />
+          <Box display="grid" gridTemplateColumns={{ xs: "1fr", lg: "1fr 1fr" }} gap={4}>
+            <Paper elevation={0} sx={{ p: { xs: 4, md: 6 }, color: "white", background: "linear-gradient(135deg, #1E3A8A 0%, #172554 100%)" }}>
+              <Stack spacing={4}>
+                <Typography variant="h4">Готовы начать сотрудничество?</Typography>
+                {[
+                  [<PhoneIcon />, "Телефон", "+7 (700) 123-45-67"],
+                  [<MailIcon />, "Email", "info@buhservice.kz"],
+                  [<PlaceIcon />, "Офис", 'г. Алматы, пр. Абая 150/230, БЦ "Esentai Tower"'],
+                  [<WhatsAppIcon />, "WhatsApp", "Написать в WhatsApp"]
+                ].map(([icon, label, value]) => (
+                  <Stack key={label as string} direction="row" spacing={2} alignItems="flex-start">
+                    <Box sx={{ mt: 0.3 }}>{icon as ReactNode}</Box>
+                    <Box>
+                      <Typography fontWeight={800}>{label}</Typography>
+                      <Typography sx={{ color: "#DBEAFE" }}>{value}</Typography>
+                    </Box>
+                  </Stack>
+                ))}
+                <Divider sx={{ borderColor: "rgba(255,255,255,0.2)" }} />
+                <Typography sx={{ color: "#DBEAFE" }}>Пн-Пт: 9:00 - 18:00</Typography>
+              </Stack>
+            </Paper>
+
+            <Card>
+              <CardContent sx={{ p: { xs: 4, md: 6 } }}>
+                {contactSubmitted ? (
+                  <Stack spacing={3} alignItems="center" textAlign="center" py={4}>
+                    <IconTile>
+                      <SendIcon />
+                    </IconTile>
+                    <Typography variant="h4">Спасибо за заявку!</Typography>
+                    <Typography color="text.secondary">Мы свяжемся с вами в ближайшее время.</Typography>
+                  </Stack>
+                ) : (
+                  <Stack component="form" spacing={2.5} onSubmit={handleContact}>
+                    {contactError && <Alert severity="error">{contactError}</Alert>}
+                    <TextField
+                      label="Ваше имя"
+                      placeholder="Иван Иванов"
+                      value={contactForm.name}
+                      onChange={(event) => setContactForm((current) => ({ ...current, name: event.target.value }))}
+                      required
+                      fullWidth
+                    />
+                    <TextField
+                      label="Телефон"
+                      placeholder="+7 (___) ___-__-__"
+                      value={contactForm.phone}
+                      onChange={(event) => setContactForm((current) => ({ ...current, phone: event.target.value }))}
+                      required
+                      fullWidth
+                    />
+                    <TextField
+                      label="Сообщение"
+                      placeholder="Расскажите о вашем бизнесе..."
+                      value={contactForm.message}
+                      onChange={(event) => setContactForm((current) => ({ ...current, message: event.target.value }))}
+                      multiline
+                      minRows={4}
+                      fullWidth
+                    />
+                    <Button type="submit" variant="contained" size="large" disabled={contactSubmitting}>
+                      {contactSubmitting ? <CircularProgress size={22} color="inherit" /> : "Отправить заявку"}
+                    </Button>
+                    <Typography variant="body2" color="text.secondary" textAlign="center">
+                      Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности.
+                    </Typography>
+                  </Stack>
+                )}
+              </CardContent>
+            </Card>
+          </Box>
+        </Container>
+      </Box>
+
+      <Box component="footer" sx={{ py: 6, bgcolor: "#111827", color: "white" }}>
+        <Container maxWidth="xl">
+          <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "2fr 1fr 1fr 1.5fr" }} gap={4}>
+            <Box>
+              <Typography variant="h6" color="primary.light" mb={2}>
+                Buh Service
+              </Typography>
+              <Typography sx={{ color: "#9CA3AF", maxWidth: 320 }}>
+                Профессиональные бухгалтерские услуги для ИП и ТОО с онлайн-кабинетом.
+              </Typography>
+            </Box>
+            <Box>
+              <Typography fontWeight={800} mb={2}>
+                Услуги
+              </Typography>
+              <Stack spacing={1} sx={{ color: "#9CA3AF" }}>
+                <Typography>Бухгалтерское сопровождение</Typography>
+                <Typography>Кадровый учет</Typography>
+                <Typography>Налоговая отчетность</Typography>
+              </Stack>
+            </Box>
+            <Box>
+              <Typography fontWeight={800} mb={2}>
+                Компания
+              </Typography>
+              <Stack spacing={1} sx={{ color: "#9CA3AF" }}>
+                <Button color="inherit" onClick={() => scrollToSection("how-it-works")} sx={{ justifyContent: "flex-start", p: 0 }}>
+                  Как мы работаем
+                </Button>
+                <Button color="inherit" onClick={() => scrollToSection("pricing")} sx={{ justifyContent: "flex-start", p: 0 }}>
+                  Тарифы
+                </Button>
+                <Button color="inherit" onClick={() => scrollToSection("price-list")} sx={{ justifyContent: "flex-start", p: 0 }}>
+                  Прайс
+                </Button>
+                <Button color="inherit" onClick={() => scrollToSection("faq")} sx={{ justifyContent: "flex-start", p: 0 }}>
+                  FAQ
+                </Button>
+              </Stack>
+            </Box>
+            <Box>
+              <Typography fontWeight={800} mb={2}>
+                Контакты
+              </Typography>
+              <Stack spacing={1.5} sx={{ color: "#9CA3AF" }}>
+                <Typography>+7 (700) 123-45-67</Typography>
+                <Typography>info@buhservice.kz</Typography>
+                <Typography>г. Алматы, пр. Абая 150/230</Typography>
+              </Stack>
+            </Box>
+          </Box>
+          <Divider sx={{ borderColor: "#1F2937", my: 4 }} />
+          <Typography variant="body2" sx={{ color: "#9CA3AF" }}>
+            © 2026 Buh Service. Все права защищены.
+          </Typography>
+        </Container>
+      </Box>
+    </Box>
+  );
+}
