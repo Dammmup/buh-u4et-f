@@ -48,6 +48,10 @@ export function LoginPage() {
         <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "0.9fr 1fr" }} gap={3} alignItems="stretch">
           <Paper elevation={0} sx={{ p: { xs: 4, md: 6 }, color: "white", background: "linear-gradient(135deg, #1E3A8A 0%, #172554 100%)" }}>
             <Stack spacing={3} height="100%" justifyContent="center">
+              <Box display="flex" alignItems="center" gap={1.5}>
+                <img src="/logo.svg" alt="Logo" style={{ width: 40, height: 40, filter: "brightness(0) invert(1)" }} />
+                <Typography variant="h5" sx={{ fontWeight: 900 }}>Bukhuchet.kz</Typography>
+              </Box>
               <Chip label="Личный кабинет" sx={{ alignSelf: "flex-start", bgcolor: "rgba(255,255,255,0.16)", color: "white" }} />
               <Typography variant="h3">Бухгалтерия онлайн без лишних переписок</Typography>
               <Typography sx={{ color: "#DBEAFE", lineHeight: 1.7 }}>

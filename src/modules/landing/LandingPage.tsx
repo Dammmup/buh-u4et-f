@@ -583,13 +583,26 @@ export function LandingPage() {
   };
 
   return (
-    <Box bgcolor="white">
+    <Box id="top" bgcolor="white">
       <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: "1px solid #E5E7EB" }}>
         <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ minHeight: 64 }}>
-            <Typography variant="h6" color="primary" sx={{ fontWeight: 900, flex: { xs: 1, md: "initial" }, mr: 5 }}>
-              {brandName}
-            </Typography>
+            <Box
+              onClick={() => scrollToSection("top")}
+              sx={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: 1.5, 
+                cursor: "pointer", 
+                flex: { xs: 1, md: "initial" }, 
+                mr: 5 
+              }}
+            >
+              <img src="/logo.svg" alt="Logo" style={{ width: 32, height: 32 }} />
+              <Typography variant="h6" color="primary" sx={{ fontWeight: 900 }}>
+                {brandName}
+              </Typography>
+            </Box>
             <Stack direction="row" spacing={4} sx={{ display: { xs: "none", md: "flex" }, flex: 1 }}>
               {navItems.map((item) => (
                 <Button key={item.target} color="inherit" onClick={() => handleNav(item.target)}>
@@ -617,6 +630,12 @@ export function LandingPage() {
         {mobileMenuOpen && (
           <Box sx={{ display: { xs: "block", md: "none" }, bgcolor: "white", borderTop: "1px solid #E5E7EB" }}>
             <Container sx={{ py: 2 }}>
+              <Box display="flex" alignItems="center" gap={1.5} mb={2} px={1}>
+                <img src="/logo.svg" alt="Logo" style={{ width: 32, height: 32 }} />
+                <Typography variant="h6" color="primary" sx={{ fontWeight: 900 }}>
+                  {brandName}
+                </Typography>
+              </Box>
               <Stack spacing={1}>
                 {navItems.map((item) => (
                   <Button key={item.target} color="inherit" onClick={() => handleNav(item.target)} sx={{ justifyContent: "flex-start" }}>
@@ -1063,9 +1082,12 @@ export function LandingPage() {
         <Container maxWidth="xl">
           <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "2fr 1fr 1fr 1.5fr" }} gap={4}>
             <Box>
-              <Typography variant="h6" color="primary.light" mb={2}>
-                {brandName}
-              </Typography>
+              <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                <img src="/logo.svg" alt="Logo" style={{ width: 32, height: 32 }} />
+                <Typography variant="h6" color="primary.light">
+                  {brandName}
+                </Typography>
+              </Box>
               <Typography sx={{ color: "#9CA3AF", maxWidth: 320 }}>
                 Профессиональные бухгалтерские услуги для ИП и ТОО с онлайн-кабинетом.
               </Typography>
