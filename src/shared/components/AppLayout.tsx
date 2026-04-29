@@ -51,13 +51,16 @@ export function AppLayout() {
 
   const drawer = (
     <Box width={280} role="presentation" onClick={() => setOpen(false)}>
-      <Box px={3} py={2.5}>
-        <Typography variant="h6" color="primary" sx={{ fontWeight: 900 }}>
-          Bukhuchet.kz
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {user?.email}
-        </Typography>
+      <Box px={3} py={2.5} display="flex" alignItems="center" gap={1.5}>
+        <img src="/logo.svg" alt="Logo" style={{ width: 40, height: 40 }} />
+        <Box>
+          <Typography variant="h6" color="primary" sx={{ fontWeight: 900, lineHeight: 1.2 }}>
+            Bukhuchet.kz
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {user?.email}
+          </Typography>
+        </Box>
       </Box>
       <List>
         {items.map((item) => (
@@ -100,15 +103,26 @@ export function AppLayout() {
               <MenuIcon />
             </IconButton>
           )}
-          <Typography
+          <Box
             component={RouterLink}
             to="/dashboard"
-            variant="h6"
-            color="primary"
-            sx={{ textDecoration: "none", fontWeight: 900, mr: 4 }}
+            sx={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: 1.5, 
+              textDecoration: "none", 
+              mr: 4 
+            }}
           >
-            Bukhuchet.kz
-          </Typography>
+            <img src="/logo.svg" alt="Logo" style={{ width: 32, height: 32 }} />
+            <Typography
+              variant="h6"
+              color="primary"
+              sx={{ fontWeight: 900 }}
+            >
+              Bukhuchet.kz
+            </Typography>
+          </Box>
           {!isMobile && (
             <Box display="flex" gap={1.5} flex={1}>
               {items.map((item) => (
