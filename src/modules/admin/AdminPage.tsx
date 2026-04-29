@@ -318,7 +318,7 @@ export function AdminPage() {
                           </Stack>
                           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                             <StatusChip status={order.status} />
-                            <Chip label={formatMoney(order.calculation.total)} color="primary" />
+                            <Chip label={formatMoney(order.calculation.total)} color="secondary" />
                           </Stack>
                         </Stack>
                       </AccordionSummary>
@@ -381,7 +381,9 @@ export function AdminPage() {
                                     <Typography fontWeight={900}>Итого</Typography>
                                   </TableCell>
                                   <TableCell align="right">
-                                    <Typography fontWeight={900}>{formatMoney(order.calculation.total)}</Typography>
+                                    <Typography fontWeight={900} color="secondary.dark">
+                                      {formatMoney(order.calculation.total)}
+                                    </Typography>
                                   </TableCell>
                                 </TableRow>
                               </TableBody>
@@ -487,7 +489,7 @@ function ServiceEditor({ service, saving, onPatch, onSave, onDelete }: ServiceEd
               {service.category} · {service.slug}
             </Typography>
           </Stack>
-          <Chip label={`от ${formatMoney(service.pricing.basePrice)}`} color="primary" sx={{ alignSelf: "center" }} />
+          <Chip label={`от ${formatMoney(service.pricing.basePrice)}`} color="secondary" sx={{ alignSelf: "center" }} />
         </Stack>
       </AccordionSummary>
       <AccordionDetails>

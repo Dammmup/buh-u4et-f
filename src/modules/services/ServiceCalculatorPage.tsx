@@ -296,7 +296,7 @@ export function ServiceCalculatorPage() {
                 <Typography variant="body2" color="text.secondary">
                   Итог
                 </Typography>
-                <Typography variant="h3" color="primary">
+                <Typography variant="h3" color="secondary.dark">
                   {formatMoney(total)}
                 </Typography>
               </Stack>

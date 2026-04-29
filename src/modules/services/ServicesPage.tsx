@@ -179,7 +179,7 @@ export function ServicesPage() {
                       <Typography variant="h6">{service.name}</Typography>
                     </Stack>
                     <Stack spacing={1} alignItems="flex-end">
-                      <Chip label={`от ${formatMoney(service.pricing.basePrice)}`} color="primary" />
+                      <Chip label={`от ${formatMoney(service.pricing.basePrice)}`} color="secondary" />
                       {!allowed && <Chip label="недоступно" color="warning" size="small" />}
                     </Stack>
                   </Stack>
@@ -216,7 +216,7 @@ export function ServicesPage() {
                           <Typography variant="body2" color="text.secondary">
                             {rule.label}
                           </Typography>
-                          <Typography variant="body2" fontWeight={800} textAlign="right">
+                          <Typography variant="body2" fontWeight={800} textAlign="right" color="secondary.dark">
                             {rule.type === "fixed" && rule.amount !== undefined
                               ? formatMoney(rule.amount)
                               : rule.type === "percentage" && rule.rate !== undefined

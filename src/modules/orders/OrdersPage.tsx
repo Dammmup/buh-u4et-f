@@ -209,7 +209,7 @@ export function OrdersPage() {
                   </Stack>
                   <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                     <StatusChip status={order.status} />
-                    <Chip label={formatMoney(order.calculation.total)} color="primary" />
+                    <Chip label={formatMoney(order.calculation.total)} color="secondary" />
                   </Stack>
                 </Stack>
               </AccordionSummary>
@@ -326,7 +326,9 @@ export function OrdersPage() {
                             <Typography fontWeight={900}>Итого</Typography>
                           </TableCell>
                           <TableCell align="right">
-                            <Typography fontWeight={900}>{formatMoney(order.calculation.total)}</Typography>
+                            <Typography fontWeight={900} color="secondary.dark">
+                              {formatMoney(order.calculation.total)}
+                            </Typography>
                           </TableCell>
                         </TableRow>
                       </TableBody>

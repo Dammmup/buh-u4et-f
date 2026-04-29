@@ -53,7 +53,7 @@ export function AppLayout() {
     <Box width={280} role="presentation" onClick={() => setOpen(false)}>
       <Box px={3} py={2.5}>
         <Typography variant="h6" color="primary" sx={{ fontWeight: 900 }}>
-          Buh Service
+          Bukhuchet.kz
         </Typography>
         <Typography variant="body2" color="text.secondary">
           {user?.email}
@@ -107,7 +107,7 @@ export function AppLayout() {
             color="primary"
             sx={{ textDecoration: "none", fontWeight: 900, mr: 4 }}
           >
-            Buh Service
+            Bukhuchet.kz
           </Typography>
           {!isMobile && (
             <Box display="flex" gap={1.5} flex={1}>

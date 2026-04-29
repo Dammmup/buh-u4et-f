@@ -10,9 +10,9 @@ export const theme = createTheme({
       contrastText: "#FFFFFF"
     },
     secondary: {
-      main: "#D97706",
-      dark: "#B45309",
-      light: "#FEF3C7",
+      main: "#25D366",
+      dark: "#128C7E",
+      light: "#DCF8C6",
       contrastText: "#FFFFFF"
     },
     success: {
@@ -33,9 +33,9 @@ export const theme = createTheme({
   typography: {
     fontFamily:
       'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    h1: { fontWeight: 800, letterSpacing: 0 },
-    h2: { fontWeight: 800, letterSpacing: 0 },
-    h3: { fontWeight: 800, letterSpacing: 0 },
+    h1: { fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 900, letterSpacing: 0 },
+    h2: { fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 900, letterSpacing: 0 },
+    h3: { fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 800, letterSpacing: 0 },
     h4: { fontWeight: 800, letterSpacing: 0 },
     h5: { fontWeight: 700, letterSpacing: 0 },
     h6: { fontWeight: 700, letterSpacing: 0 },

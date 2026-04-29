@@ -61,6 +61,13 @@ const navItems = [
   { label: "FAQ", target: "faq" }
 ];
 
+const brandName = "Bukhuchet.kz";
+const contactPhoneDisplay = "+7 777 803 67 88";
+const contactPhoneHref = "tel:+77778036788";
+const whatsappHref = "https://wa.me/77778036788";
+const contactEmail = "bukhuchet88@gmail.com";
+const contactAddress = "Навои 323";
+
 const serviceCards = [
   {
     icon: <ArticleIcon />,
@@ -112,7 +119,6 @@ const priceList = [
     title: "Отчет в налоговые органы",
     items: [
       { name: "Любая форма «нулевка»", price: "5 000 тг" },
-      { name: "Форма 911 Расчет стоимости патента", price: "10 000 тг" },
       { name: "Форма 300 по данным портала ИС ЭСФ", price: "30 000 тг" },
       { name: "Плюс за каждого работника", price: "1 500 тг" },
       { name: "Форма 910 без работников", price: "7 000 тг" },
@@ -122,9 +128,7 @@ const priceList = [
       { name: "Форма 328 (до 10 строк)", price: "20 000 тг" },
       { name: "Форма 700 (земля, имущество, транспорт)", price: "15 000 тг" },
       { name: "Форма 701", price: "15 000 тг" },
-      { name: "Форма 913 СНР розничного налога", price: "20 000 тг" },
-      { name: "Дополнительная строка для формы 328", price: "1 000 тг" },
-      { name: "Форма 870 (эмиссия)", price: "15 000 тг" }
+      { name: "Дополнительная строка для формы 328", price: "1 000 тг" }
     ]
   },
   {
@@ -132,8 +136,8 @@ const priceList = [
     title: "ЭСФ, СНТ, АВР",
     items: [
       { name: "Регистрация на портале ИС ЭСФ", price: "5 000 тг" },
-      { name: "ЭСФ плюс за каждые 5 позиций", price: "1 000 тг" },
-      { name: "СНТ плюс за каждые 5 позиций", price: "1 000 тг" },
+      { name: "ЭСФ плюс за каждые 5 позиций", price: "3 000 тг" },
+      { name: "СНТ плюс за каждые 5 позиций", price: "3 000 тг" },
       { name: "Выписка документа 1-10 позиций", price: "5 000 тг" },
       { name: "АВР бумажный, электронный 1-10 позиций", price: "5 000 тг" }
     ]
@@ -156,6 +160,8 @@ const priceList = [
       },
       { name: "Регистрация ИП плюс настройка Kaspi Pay", price: "10 000 тг" },
       { name: "Регистрация ИП", price: "5 000 тг" },
+      { name: "Приостановление сдачи налоговой отчетности ИП", price: "5 000 тг" },
+      { name: "Разработка налоговой учетной политики", price: "25 000 тг" },
       { name: "Ликвидация ТОО", price: "80 000 тг" },
       { name: "Ликвидация ИП", price: "20 000 тг" }
     ]
@@ -181,7 +187,6 @@ const priceList = [
     title: "Статистическая отчетность",
     items: [
       { name: "Формирование и сдача статистической отчетности по электронным каналам", price: "15 000 тг" },
-      { name: "Отчетность в Нацбанк 1-ПБ", price: "50 000 тг" },
       { name: "Формирование и сдача нулевой отчетности", price: "5 000 тг" },
       { name: "Постановка на учет ККМ: ReKassa, налоговая, настройка приложения", price: "10 000 тг" }
     ]
@@ -583,7 +588,7 @@ export function LandingPage() {
         <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ minHeight: 64 }}>
             <Typography variant="h6" color="primary" sx={{ fontWeight: 900, flex: { xs: 1, md: "initial" }, mr: 5 }}>
-              Buh Service
+              {brandName}
             </Typography>
             <Stack direction="row" spacing={4} sx={{ display: { xs: "none", md: "flex" }, flex: 1 }}>
               {navItems.map((item) => (
@@ -593,9 +598,9 @@ export function LandingPage() {
               ))}
             </Stack>
             <Stack direction="row" spacing={1.5} alignItems="center" sx={{ display: { xs: "none", md: "flex" } }}>
-              <Link href="tel:+77001234567" color="text.secondary" underline="none" display="flex" alignItems="center">
+              <Link href={contactPhoneHref} color="text.secondary" underline="none" display="flex" alignItems="center">
                 <PhoneIcon sx={{ fontSize: 18, mr: 1 }} />
-                +7 (700) 123-45-67
+                {contactPhoneDisplay}
               </Link>
               <Button variant="contained" onClick={() => handleNav("contact")}>
                 Консультация
@@ -654,7 +659,7 @@ export function LandingPage() {
                   Получить консультацию
                 </Button>
                 <Button
-                  href="https://wa.me/77001234567"
+                  href={whatsappHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   color="secondary"
@@ -984,10 +989,10 @@ export function LandingPage() {
               <Stack spacing={4}>
                 <Typography variant="h4">Готовы начать сотрудничество?</Typography>
                 {[
-                  [<PhoneIcon />, "Телефон", "+7 (700) 123-45-67"],
-                  [<MailIcon />, "Email", "info@buhservice.kz"],
-                  [<PlaceIcon />, "Офис", 'г. Алматы, пр. Абая 150/230, БЦ "Esentai Tower"'],
-                  [<WhatsAppIcon />, "WhatsApp", "Написать в WhatsApp"]
+                  [<PhoneIcon />, "Телефон", contactPhoneDisplay],
+                  [<MailIcon />, "Email", contactEmail],
+                  [<PlaceIcon />, "Офис", contactAddress],
+                  [<WhatsAppIcon />, "WhatsApp", contactPhoneDisplay]
                 ].map(([icon, label, value]) => (
                   <Stack key={label as string} direction="row" spacing={2} alignItems="flex-start">
                     <Box sx={{ mt: 0.3 }}>{icon as ReactNode}</Box>
@@ -1059,7 +1064,7 @@ export function LandingPage() {
           <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "2fr 1fr 1fr 1.5fr" }} gap={4}>
             <Box>
               <Typography variant="h6" color="primary.light" mb={2}>
-                Buh Service
+                {brandName}
               </Typography>
               <Typography sx={{ color: "#9CA3AF", maxWidth: 320 }}>
                 Профессиональные бухгалтерские услуги для ИП и ТОО с онлайн-кабинетом.
@@ -1099,15 +1104,15 @@ export function LandingPage() {
                 Контакты
               </Typography>
               <Stack spacing={1.5} sx={{ color: "#9CA3AF" }}>
-                <Typography>+7 (700) 123-45-67</Typography>
-                <Typography>info@buhservice.kz</Typography>
-                <Typography>г. Алматы, пр. Абая 150/230</Typography>
+                <Typography>{contactPhoneDisplay}</Typography>
+                <Typography>{contactEmail}</Typography>
+                <Typography>{contactAddress}</Typography>
               </Stack>
             </Box>
           </Box>
           <Divider sx={{ borderColor: "#1F2937", my: 4 }} />
           <Typography variant="body2" sx={{ color: "#9CA3AF" }}>
-            © 2026 Buh Service. Все права защищены.
+            © 2026 {brandName}. Все права защищены.
           </Typography>
         </Container>
       </Box>

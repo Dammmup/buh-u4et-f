@@ -18,7 +18,7 @@ import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../app/store/AuthContext";
 
 export function LoginPage() {
-  const [email, setEmail] = useState("client@kenesbuh.kz");
+  const [email, setEmail] = useState("client@bukhuchet.kz");
   const [password, setPassword] = useState("Client12345");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

@@ -175,7 +175,9 @@ export function DashboardPage() {
                           <Typography variant="h6">{plan.title}</Typography>
                           <Typography color="text.secondary">{plan.description}</Typography>
                         </Stack>
-                        <Typography variant="h4">{formatMoney(plan.amount)}</Typography>
+                        <Typography variant="h4" color="secondary.dark">
+                          {formatMoney(plan.amount)}
+                        </Typography>
                         <Stack spacing={1}>
                           {plan.features.slice(0, 4).map((feature) => (
                             <Typography key={feature} variant="body2" color="text.secondary">
@@ -233,7 +235,9 @@ export function DashboardPage() {
                             </Stack>
                             <Stack direction="row" spacing={1} alignItems="center">
                               <StatusChip status={order.status} />
-                              <Typography fontWeight={900}>{formatMoney(order.calculation.total)}</Typography>
+                              <Typography fontWeight={900} color="secondary.dark">
+                                {formatMoney(order.calculation.total)}
+                              </Typography>
                             </Stack>
                           </Stack>
                         </Paper>

@@ -7,9 +7,7 @@ export type DomainCalculationType =
   | "sole_proprietor_simplified_tax"
   | "too_cit"
   | "payroll"
-  | "patent_911"
   | "property_tax"
-  | "retail_tax_913"
   | "income_total";
 
 export interface ServiceParameter {
