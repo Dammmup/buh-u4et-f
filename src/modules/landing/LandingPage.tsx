@@ -36,17 +36,22 @@ import {
   Button,
   Card,
   CardContent,
+  Checkbox,
   Chip,
   Container,
   CircularProgress,
   Divider,
+  FormControlLabel as MuiFormControlLabel,
   IconButton,
   LinearProgress,
   Link,
+  MenuItem,
   Paper,
   Stack,
   TextField,
   Toolbar,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography
 } from "@mui/material";
 import { FormEvent, ReactNode, useState } from "react";
@@ -55,6 +60,7 @@ import { api } from "../../shared/api/client";
 
 const navItems = [
   { label: "Услуги", target: "services" },
+  { label: "Калькулятор", target: "tax-calculator" },
   { label: "Прайс", target: "price-list" },
   { label: "Тарифы", target: "pricing" },
   { label: "Как работаем", target: "how-it-works" },
@@ -67,6 +73,94 @@ const contactPhoneHref = "tel:+77778036788";
 const whatsappHref = "https://wa.me/77778036788";
 const contactEmail = "bukhuchet88@gmail.com";
 const contactAddress = "Навои 323";
+
+type TariffForm = "ip" | "too";
+type TariffRegime = "simplified" | "general";
+type TariffActivity = "service" | "trade" | "production";
+type TaxMode = "ip_usn" | "ip_our" | "too_usn" | "too_our" | "reverse" | "unified";
+type CalculationDirection = "direct" | "reverse";
+type Residency = "citizen" | "foreigner";
+
+const tariffOptions = {
+  forms: [
+    { value: "ip", label: "ИП" },
+    { value: "too", label: "ТОО" }
+  ],
+  regimes: [
+    { value: "simplified", label: "Упрощенный" },
+    { value: "general", label: "Общеустановленный" }
+  ],
+  activities: [
+    { value: "service", label: "Услуга" },
+    { value: "trade", label: "Торговля" },
+    { value: "production", label: "Производство" }
+  ]
+} as const;
+
+const tariffRates: Record<TariffForm, Record<TariffRegime, Record<TariffActivity, number>>> = {
+  ip: {
+    simplified: { service: 50000, trade: 75000, production: 130000 },
+    general: { service: 100000, trade: 140000, production: 170000 }
+  },
+  too: {
+    simplified: { service: 75000, trade: 100000, production: 145000 },
+    general: { service: 150000, trade: 200000, production: 230000 }
+  }
+};
+
+const taxModes: { value: TaxMode; label: string }[] = [
+  { value: "ip_usn", label: "ИП УСН" },
+  { value: "ip_our", label: "ИП ОУР" },
+  { value: "too_usn", label: "ТОО УСН" },
+  { value: "too_our", label: "ТОО ОУР" },
+  { value: "reverse", label: "Расчет от обратного" },
+  { value: "unified", label: "Единый платеж" }
+];
+
+const monthOptions = [
+  "Январь",
+  "Февраль",
+  "Март",
+  "Апрель",
+  "Май",
+  "Июнь",
+  "Июль",
+  "Август",
+  "Сентябрь",
+  "Октябрь",
+  "Ноябрь",
+  "Декабрь"
+];
+
+const taxConstants = {
+  mrp: 4325,
+  mzp: 85000,
+  opvRate: 0.1,
+  vosmsRate: 0.02,
+  oosmsRate: 0.03,
+  socialContributionRate: 0.05,
+  socialTaxRate: 0.06,
+  opvrRate: 0.035,
+  unifiedPaymentRate: 0.248,
+  simplifiedIpRate: 0.04,
+  simplifiedTooRate: 0.03,
+  citRate: 0.2,
+  pitRate: 0.1,
+  highPitRate: 0.15,
+  vatRate: 0.16
+};
+
+const taxLimits = {
+  opvMax: taxConstants.mzp * 50 * taxConstants.opvRate,
+  vosmsMax: taxConstants.mzp * 20 * taxConstants.vosmsRate,
+  oosmsMax: taxConstants.mzp * 40 * taxConstants.oosmsRate,
+  socialContributionMin: taxConstants.mzp * taxConstants.socialContributionRate,
+  socialContributionMax: taxConstants.mzp * 7 * taxConstants.socialContributionRate,
+  opvrMin: taxConstants.mzp * taxConstants.opvrRate,
+  opvrMax: taxConstants.mzp * 50 * taxConstants.opvrRate,
+  standardDeduction: taxConstants.mrp * 30,
+  monthlyProgressivePitThreshold: (taxConstants.mrp * 8500) / 12
+};
 
 const serviceCards = [
   {
@@ -122,7 +216,7 @@ const priceList = [
       { name: "Форма 300 по данным портала ИС ЭСФ", price: "30 000 тг" },
       { name: "Плюс за каждого работника", price: "1 500 тг" },
       { name: "Форма 910 без работников", price: "7 000 тг" },
-      { name: "Форма 200 без работников", price: "7 000 тг" },
+      { name: "Форма 200 с 1 работником", price: "7 000 тг" },
       { name: "Плюс расчет дохода по ОФД и выпискам", price: "10 000 тг" },
       { name: "Комплексная бухгалтерская услуга", price: "50 000 тг" },
       { name: "Форма 328 (до 10 строк)", price: "20 000 тг" },
@@ -171,10 +265,12 @@ const priceList = [
     title: "Кадровый учет",
     items: [
       { name: "Оформление изменения штатного расписания", price: "10 000 тг" },
-      { name: "Разработка/изменение должностной инструкции", price: "20 000 тг" },
+      { name: "Разработка должностной инструкции", price: "20 000 тг" },
+      { name: "Изменение должностной инструкции", price: "10 000 тг" },
       { name: "Расчет заработной платы по системе оплаты труда заказчика", price: "5 000 тг" },
       { name: "Ввод данных в систему Enbek.kz", price: "4 000 тг" },
-      { name: "Разработка/изменение шаблона трудового договора", price: "10 000 тг" },
+      { name: "Разработка шаблона трудового договора", price: "20 000 тг" },
+      { name: "Изменение шаблона трудового договора", price: "10 000 тг" },
       { name: "Оформление изменения размера заработной платы", price: "5 000 тг" },
       { name: "Расчет в сокращенные сроки", price: "4 000 тг" },
       { name: "Формирование справки о доходах", price: "2 000 тг" },
@@ -196,20 +292,20 @@ const priceList = [
 const pricing = [
   {
     name: "Старт",
-    price: "45 000",
-    description: "Для начинающих предпринимателей",
-    features: ["Ведение учета ИП", "До 50 операций в месяц", "Налоговая отчетность", "Консультации", "Личный кабинет"]
+    price: "от 50 000",
+    description: "Для ИП на упрощенном режиме, до 3 штатных работников",
+    features: ["Ведение учета ИП", "До 50 операций в месяц", "До 3 штатных работников", "Налоговая отчетность", "Консультации"]
   },
   {
     name: "Бизнес",
-    price: "85 000",
-    description: "Оптимальное решение для ТОО",
+    price: "от 100 000",
+    description: "Для ТОО и ИП с регулярными операциями, до 3 штатных работников",
     highlighted: true,
     features: [
       "Полное ведение учета ТОО",
       "До 200 операций в месяц",
       "Отчетность и платежи",
-      "Кадровый учет до 10 человек",
+      "Кадровый учет до 3 штатных работников",
       "Приоритетная поддержка",
       "Персональный менеджер"
     ]
@@ -217,10 +313,10 @@ const pricing = [
   {
     name: "Главный бухгалтер",
     price: "от 150 000",
-    description: "Для крупного бизнеса",
+    description: "Для общего режима, торговли, производства и сложных участков",
     features: [
       "Безлимитное количество операций",
-      "Полный кадровый учет",
+      "До 3 штатных работников в базовой цене",
       "Финансовый анализ",
       "Налоговая оптимизация",
       "Выделенный бухгалтер",
@@ -297,6 +393,34 @@ function scrollToSection(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 }
 
+function formatTariff(value: number) {
+  return new Intl.NumberFormat("ru-KZ", {
+    style: "currency",
+    currency: "KZT",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
+function parseAmount(value: string) {
+  const numberValue = Number(value.replace(/\s/g, "").replace(",", "."));
+  return Number.isFinite(numberValue) ? Math.max(0, numberValue) : 0;
+}
+
+function roundMoney(value: number) {
+  return Math.round(Math.max(0, value));
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function progressivePit(taxableIncome: number) {
+  const threshold = taxLimits.monthlyProgressivePitThreshold;
+  const basePart = Math.min(taxableIncome, threshold) * taxConstants.pitRate;
+  const highPart = Math.max(0, taxableIncome - threshold) * taxConstants.highPitRate;
+  return basePart + highPart;
+}
+
 function SectionTitle({ title, subtitle, light = false }: { title: string; subtitle: string; light?: boolean }) {
   return (
     <Stack spacing={2} alignItems="center" textAlign="center" mb={{ xs: 5, md: 8 }}>
@@ -327,6 +451,633 @@ function IconTile({ children, color = "primary" }: { children: ReactNode; color?
       {children}
     </Box>
   );
+}
+
+function TariffCalculator() {
+  const [form, setForm] = useState<TariffForm>("ip");
+  const [regime, setRegime] = useState<TariffRegime>("simplified");
+  const [activity, setActivity] = useState<TariffActivity>("service");
+
+  const monthly = tariffRates[form][regime][activity];
+  const yearly = monthly * 10;
+
+  return (
+    <Card sx={{ mb: 4, overflow: "hidden", borderColor: "primary.main" }}>
+      <Box sx={{ p: { xs: 3, md: 4 }, background: "linear-gradient(135deg, #1E3A8A 0%, #172554 100%)", color: "white" }}>
+        <Stack spacing={1}>
+          <Typography variant="h4" color="white">
+            Подбор тарифа
+          </Typography>
+          <Typography sx={{ color: "#DBEAFE", maxWidth: 780 }}>
+            Выберите форму собственности, режим налогообложения и вид деятельности. Базовая стоимость включает до 3 штатных работников.
+          </Typography>
+        </Stack>
+      </Box>
+      <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+        <Box display="grid" gridTemplateColumns={{ xs: "1fr", lg: "1.15fr 0.85fr" }} gap={4} alignItems="stretch">
+          <Stack spacing={3}>
+            <TariffToggle
+              title="Форма собственности"
+              value={form}
+              options={tariffOptions.forms}
+              onChange={(value) => setForm(value as TariffForm)}
+            />
+            <TariffToggle
+              title="Режим налогообложения"
+              value={regime}
+              options={tariffOptions.regimes}
+              onChange={(value) => setRegime(value as TariffRegime)}
+            />
+            <TariffToggle
+              title="Вид деятельности"
+              value={activity}
+              options={tariffOptions.activities}
+              onChange={(value) => setActivity(value as TariffActivity)}
+            />
+          </Stack>
+
+          <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, bgcolor: "background.default", border: "1px solid #E5E7EB" }}>
+            <Stack spacing={2.5}>
+              <Chip label="До 3 штатных работников включено" color="secondary" sx={{ alignSelf: "flex-start" }} />
+              <Box>
+                <Typography color="text.secondary" mb={0.5}>
+                  Стоимость в месяц
+                </Typography>
+                <Typography variant="h3" color="secondary.dark">
+                  {formatTariff(monthly)}
+                </Typography>
+              </Box>
+              <Divider />
+              <Stack direction="row" justifyContent="space-between" gap={2}>
+                <Typography color="text.secondary">Стоимость за год</Typography>
+                <Typography fontWeight={900} color="secondary.dark">
+                  {formatTariff(yearly)}
+                </Typography>
+              </Stack>
+              <Typography variant="body2" color="text.secondary">
+                Расчет предварительный. Если штат больше 3 работников или есть НДС, ВЭД, акциз, имущество, транспорт или земля, стоимость уточняется после консультации.
+              </Typography>
+              <Button variant="contained" onClick={() => scrollToSection("contact")}>
+                Получить точный расчет
+              </Button>
+            </Stack>
+          </Paper>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TariffToggle<T extends string>({
+  title,
+  value,
+  options,
+  onChange
+}: {
+  title: string;
+  value: T;
+  options: readonly { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <Stack spacing={1.25}>
+      <Typography variant="h6">{title}</Typography>
+      <ToggleButtonGroup
+        exclusive
+        value={value}
+        onChange={(_event, nextValue: T | null) => {
+          if (nextValue) {
+            onChange(nextValue);
+          }
+        }}
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: `repeat(${options.length}, 1fr)` },
+          gap: 1,
+          "& .MuiToggleButtonGroup-grouped": {
+            m: "0 !important",
+            border: "1px solid #E5E7EB !important",
+            borderRadius: "8px !important"
+          }
+        }}
+      >
+        {options.map((option) => (
+          <ToggleButton key={option.value} value={option.value} color="primary" sx={{ minHeight: 48, fontWeight: 800 }}>
+            {option.label}
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
+    </Stack>
+  );
+}
+
+interface TaxBreakdownItem {
+  label: string;
+  amount: number;
+  hint?: string;
+}
+
+interface TaxCalculationResult {
+  businessIncome: number;
+  expenses: number;
+  taxableBusinessBase: number;
+  breakdown: TaxBreakdownItem[];
+  total: number;
+  net: number;
+  warnings: string[];
+}
+
+function TaxCalculator() {
+  const [mode, setMode] = useState<TaxMode>("ip_our");
+  const [direction, setDirection] = useState<CalculationDirection>("direct");
+  const [year, setYear] = useState("2026");
+  const [month, setMonth] = useState("Май");
+  const [income, setIncome] = useState("");
+  const [expenses, setExpenses] = useState("");
+  const [salary, setSalary] = useState("");
+  const [gphAmount, setGphAmount] = useState("");
+  const [includeBusinessTax, setIncludeBusinessTax] = useState(true);
+  const [includeStaffEmployee, setIncludeStaffEmployee] = useState(false);
+  const [includeGphEmployee, setIncludeGphEmployee] = useState(false);
+  const [changedThisMonth, setChangedThisMonth] = useState(false);
+  const [residency, setResidency] = useState<Residency>("citizen");
+  const [taxResident, setTaxResident] = useState(true);
+  const [eaecCitizen, setEaecCitizen] = useState(false);
+  const [pensioner, setPensioner] = useState(false);
+  const [oppvRecipient, setOppvRecipient] = useState(false);
+  const [student, setStudent] = useState(false);
+
+  const effectiveMode: TaxMode = mode === "reverse" ? "ip_our" : mode;
+  const entityType = effectiveMode.startsWith("too") ? "too" : "ip";
+  const businessRegime = effectiveMode.endsWith("usn") ? "usn" : "our";
+  const isUnified = mode === "unified";
+  const isReverse = mode === "reverse" || direction === "reverse";
+
+  const buildCalculation = (businessIncome: number) => {
+    const expenseAmount = parseAmount(expenses);
+    const salaryAmount = parseAmount(salary);
+    const gphGross = parseAmount(gphAmount);
+    const breakdown: TaxBreakdownItem[] = [];
+    const warnings: string[] = [];
+    const add = (label: string, amount: number, hint?: string) => {
+      if (amount > 0) {
+        breakdown.push({ label, amount: roundMoney(amount), hint });
+      }
+    };
+
+    const taxableBusinessBase =
+      businessRegime === "our" ? Math.max(0, businessIncome - expenseAmount) : businessIncome;
+
+    let businessTax = 0;
+    if (includeBusinessTax && businessIncome > 0 && !isUnified) {
+      if (businessRegime === "usn") {
+        const rate = entityType === "ip" ? taxConstants.simplifiedIpRate : taxConstants.simplifiedTooRate;
+        businessTax = taxableBusinessBase * rate;
+        add(entityType === "ip" ? "Налог ИП по УСН" : "Налог ТОО по УСН", businessTax, `${rate * 100}% от дохода`);
+      } else if (entityType === "ip") {
+        businessTax = progressivePit(taxableBusinessBase);
+        add("ИПН ИП на ОУР", businessTax, "10-15% от прибыли");
+      } else {
+        businessTax = taxableBusinessBase * taxConstants.citRate;
+        add("КПН ТОО", businessTax, "20% от прибыли");
+      }
+    }
+
+    if (includeBusinessTax && entityType === "ip" && businessIncome > 0 && !isUnified) {
+      const opv = pensioner ? 0 : Math.min(businessIncome * taxConstants.opvRate, taxLimits.opvMax);
+      const socialContribution = pensioner
+        ? 0
+        : clamp((Math.max(taxConstants.mzp, businessIncome) - Math.min(opv, taxConstants.mzp * taxConstants.opvRate)) * taxConstants.socialContributionRate, taxLimits.socialContributionMin, taxLimits.socialContributionMax);
+      const vosms = pensioner ? 0 : taxConstants.mzp * 1.4 * 0.05;
+      const opvr = pensioner ? 0 : taxLimits.opvrMin;
+      const socialTax = taxConstants.mrp * 2;
+
+      add("ОПВ за ИП", opv, "10%, максимум 425 000 тг");
+      add("СО за ИП", socialContribution, "5% с учетом лимитов");
+      add("ВОСМС за ИП", vosms, "5% от 1.4 МЗП");
+      add("ОПВР за ИП", opvr, "3.5% от 1 МЗП");
+      add("Социальный налог за ИП", socialTax, "2 МРП");
+    }
+
+    if (includeStaffEmployee && salaryAmount > 0) {
+      const payroll = calculateEmployeePayroll(salaryAmount, {
+        entityType,
+        pensioner,
+        student,
+        nonResident: residency === "foreigner" && !taxResident,
+        useUnifiedPayment: isUnified
+      });
+
+      add("ОПВ работника", payroll.opv, "удерживается с зарплаты");
+      add("ВОСМС работника", payroll.vosms, "удерживается с зарплаты");
+      add("ИПН работника", payroll.pit, "удерживается с зарплаты");
+      add("СО работодателя", payroll.socialContribution);
+      add(entityType === "ip" ? "СН за работника ИП" : "СН работодателя", payroll.socialTax);
+      add("ООСМС работодателя", payroll.oosms);
+      add("ОПВР работодателя", payroll.opvr);
+    }
+
+    if (includeGphEmployee && gphGross > 0) {
+      const gph = calculateGph(gphGross, residency === "foreigner" && !taxResident, pensioner || student);
+      add("ОПВ по ГПХ", gph.opv);
+      add("ВОСМС по ГПХ", gph.vosms);
+      add("ИПН по ГПХ", gph.pit);
+    }
+
+    if (isUnified) {
+      const unifiedBase = salaryAmount || businessIncome;
+      add("Единый платеж", unifiedBase * taxConstants.unifiedPaymentRate, "24.8% от базы");
+    }
+
+    if (changedThisMonth) {
+      warnings.push("Если работник принят или уволен в этом месяце, расчет нужно сверить по фактическим дням и начислениям.");
+    }
+    if (oppvRecipient) {
+      warnings.push("Для получателей ОППВ могут применяться отдельные правила. Сверьте расчет с бухгалтером.");
+    }
+    if (student) {
+      warnings.push("Для студентов льготы зависят от статуса и документов. Калькулятор применяет упрощенное освобождение по пенсионным/медицинским платежам.");
+    }
+    if (residency === "foreigner" && !eaecCitizen) {
+      warnings.push("Для иностранцев не из ЕАЭС часть взносов может отличаться. Проверьте договор и статус резидентства.");
+    }
+
+    const total = breakdown.reduce((sum, item) => sum + item.amount, 0);
+    const net = Math.max(0, businessIncome - total);
+
+    return {
+      businessIncome,
+      expenses: expenseAmount,
+      taxableBusinessBase,
+      breakdown,
+      total,
+      net,
+      warnings
+    };
+  };
+
+  const directIncome = parseAmount(income);
+  const resolvedIncome = isReverse ? resolveReverseIncome(directIncome, buildCalculation) : directIncome;
+  const result = buildCalculation(resolvedIncome);
+  const hasInput = directIncome > 0 || parseAmount(salary) > 0 || parseAmount(gphAmount) > 0;
+
+  return (
+    <Box id="tax-calculator" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "background.default" }}>
+      <Container maxWidth="xl">
+        <SectionTitle
+          title="Налоговый калькулятор 2026"
+          subtitle="Предварительный расчет налогов и взносов для ИП и ТОО по основным режимам"
+        />
+
+        <Box display="grid" gridTemplateColumns={{ xs: "1fr", lg: "1fr 0.52fr" }} gap={3} alignItems="stretch">
+          <Card sx={{ overflow: "hidden" }}>
+            <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: "#F8FAFC", borderBottom: "1px solid #E5E7EB" }}>
+              <ToggleButtonGroup
+                exclusive
+                value={mode}
+                onChange={(_event, nextMode: TaxMode | null) => {
+                  if (nextMode) {
+                    setMode(nextMode);
+                    setDirection(nextMode === "reverse" ? "reverse" : "direct");
+                  }
+                }}
+                sx={{ display: "flex", flexWrap: "wrap", gap: 1, "& .MuiToggleButtonGroup-grouped": { borderRadius: "999px !important", border: "1px solid #D1D5DB !important", px: 2.2 } }}
+              >
+                {taxModes.map((item) => (
+                  <ToggleButton key={item.value} value={item.value}>
+                    {item.label}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </Box>
+
+            <CardContent sx={{ p: { xs: 2.5, md: 4 } }}>
+              <Stack spacing={3}>
+                <Box display="grid" gridTemplateColumns={{ xs: "1fr", sm: "1.15fr 0.75fr 0.9fr 0.65fr 0.8fr" }} gap={1.5}>
+                  <TextField select label="Тип расчета" value={direction} onChange={(event) => setDirection(event.target.value as CalculationDirection)}>
+                    <MenuItem value="direct">Прямой расчет</MenuItem>
+                    <MenuItem value="reverse">Расчет от обратного</MenuItem>
+                  </TextField>
+                  <TextField label="Форма" value={entityType === "ip" ? "ИП" : "ТОО"} disabled />
+                  <TextField label="Режим" value={businessRegime === "usn" ? "УСН" : "ОУР"} disabled />
+                  <TextField select label="Год" value={year} onChange={(event) => setYear(event.target.value)}>
+                    <MenuItem value="2026">2026</MenuItem>
+                  </TextField>
+                  <TextField select label="Месяц" value={month} onChange={(event) => setMonth(event.target.value)}>
+                    {monthOptions.map((item) => (
+                      <MenuItem key={item} value={item}>
+                        {item}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Box>
+
+                <Divider />
+
+                <CalculatorSection title="Расчет">
+                  <MuiFormControlLabel
+                    control={<Checkbox checked={includeBusinessTax} onChange={(event) => setIncludeBusinessTax(event.target.checked)} />}
+                    label={entityType === "ip" ? "Налоги за ИП" : "Налоги за ТОО"}
+                  />
+                  <MuiFormControlLabel
+                    control={<Checkbox checked={includeStaffEmployee} onChange={(event) => setIncludeStaffEmployee(event.target.checked)} />}
+                    label="За работника в штате"
+                  />
+                  <MuiFormControlLabel
+                    control={<Checkbox checked={includeGphEmployee} onChange={(event) => setIncludeGphEmployee(event.target.checked)} />}
+                    label="За работника на ГПХ"
+                  />
+                  <MuiFormControlLabel
+                    control={<Checkbox checked={changedThisMonth} onChange={(event) => setChangedThisMonth(event.target.checked)} />}
+                    label="Нанят или уволен в этом месяце"
+                  />
+                </CalculatorSection>
+
+                <Divider />
+
+                <CalculatorSection title="Доход">
+                  <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: businessRegime === "our" ? "1fr 1fr" : "1fr" }} gap={1.5} width="100%">
+                    <TextField
+                      label={isReverse ? "Сумма после налогов" : "База расчета"}
+                      placeholder="Введите сумму..."
+                      value={income}
+                      onChange={(event) => setIncome(event.target.value)}
+                      type="number"
+                    />
+                    {businessRegime === "our" && !isUnified && (
+                      <TextField
+                        label="Расходы"
+                        placeholder="Введите расходы..."
+                        value={expenses}
+                        onChange={(event) => setExpenses(event.target.value)}
+                        type="number"
+                      />
+                    )}
+                  </Box>
+                </CalculatorSection>
+
+                {(includeStaffEmployee || includeGphEmployee) && (
+                  <>
+                    <Divider />
+                    <CalculatorSection title="Работники">
+                      <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "1fr 1fr" }} gap={1.5} width="100%">
+                        {includeStaffEmployee && (
+                          <TextField label="Зарплата штатного работника" value={salary} onChange={(event) => setSalary(event.target.value)} type="number" />
+                        )}
+                        {includeGphEmployee && (
+                          <TextField label="Сумма договора ГПХ" value={gphAmount} onChange={(event) => setGphAmount(event.target.value)} type="number" />
+                        )}
+                      </Box>
+                    </CalculatorSection>
+                  </>
+                )}
+
+                <Divider />
+
+                <CalculatorSection title="Резидентство">
+                  <MuiFormControlLabel
+                    control={<Checkbox checked={residency === "citizen"} onChange={() => setResidency("citizen")} />}
+                    label="Гражданин РК"
+                  />
+                  <MuiFormControlLabel
+                    control={<Checkbox checked={residency === "foreigner"} onChange={() => setResidency("foreigner")} />}
+                    label="Иностранец"
+                  />
+                  <MuiFormControlLabel
+                    control={<Checkbox checked={taxResident} onChange={(event) => setTaxResident(event.target.checked)} />}
+                    label="Налоговый резидент РК"
+                  />
+                  <MuiFormControlLabel
+                    control={<Checkbox checked={eaecCitizen} onChange={(event) => setEaecCitizen(event.target.checked)} />}
+                    label="Гражданин ЕАЭС"
+                  />
+                </CalculatorSection>
+
+                <Divider />
+
+                <CalculatorSection title="Социальные статусы">
+                  <MuiFormControlLabel
+                    control={<Checkbox checked={pensioner} onChange={(event) => setPensioner(event.target.checked)} />}
+                    label="Пенсионер"
+                  />
+                  <MuiFormControlLabel
+                    control={<Checkbox checked={oppvRecipient} onChange={(event) => setOppvRecipient(event.target.checked)} />}
+                    label="Получатель ОППВ"
+                  />
+                  <MuiFormControlLabel
+                    control={<Checkbox checked={student} onChange={(event) => setStudent(event.target.checked)} />}
+                    label="Студент"
+                  />
+                </CalculatorSection>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <TaxResultPanel hasInput={hasInput} result={result} isReverse={isReverse} />
+        </Box>
+      </Container>
+    </Box>
+  );
+}
+
+function CalculatorSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "220px 1fr" }} gap={{ xs: 1.5, md: 3 }} alignItems="flex-start">
+      <Typography variant="h6">{title}</Typography>
+      <Stack direction={{ xs: "column", sm: "row" }} flexWrap="wrap" gap={1.5}>
+        {children}
+      </Stack>
+    </Box>
+  );
+}
+
+function TaxResultPanel({
+  hasInput,
+  result,
+  isReverse
+}: {
+  hasInput: boolean;
+  result: TaxCalculationResult;
+  isReverse: boolean;
+}) {
+  if (!hasInput) {
+    return (
+      <Card sx={{ minHeight: 520, display: "grid", placeItems: "center", textAlign: "center" }}>
+        <CardContent>
+          <Stack spacing={2} alignItems="center">
+            <CalculateIcon sx={{ fontSize: 72, color: "text.secondary" }} />
+            <Typography variant="h5" color="text.secondary">
+              Укажите параметры для получения результата
+            </Typography>
+          </Stack>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card sx={{ position: { lg: "sticky" }, top: { lg: 88 }, alignSelf: "flex-start" }}>
+      <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+        <Stack spacing={2.5}>
+          <Box>
+            <Typography color="text.secondary">К перечислению</Typography>
+            <Typography variant="h3" color="secondary.dark">
+              {formatTariff(result.total)}
+            </Typography>
+          </Box>
+
+          <Stack spacing={1}>
+            <Stack direction="row" justifyContent="space-between" gap={2}>
+              <Typography color="text.secondary">{isReverse ? "Расчетная база" : "Доход"}</Typography>
+              <Typography fontWeight={900}>{formatTariff(result.businessIncome)}</Typography>
+            </Stack>
+            {result.expenses > 0 && (
+              <Stack direction="row" justifyContent="space-between" gap={2}>
+                <Typography color="text.secondary">Расходы</Typography>
+                <Typography fontWeight={900}>{formatTariff(result.expenses)}</Typography>
+              </Stack>
+            )}
+            <Stack direction="row" justifyContent="space-between" gap={2}>
+              <Typography color="text.secondary">После налогов</Typography>
+              <Typography fontWeight={900} color="secondary.dark">
+                {formatTariff(result.net)}
+              </Typography>
+            </Stack>
+          </Stack>
+
+          <Divider />
+
+          <Stack spacing={1.25}>
+            {result.breakdown.map((item: TaxBreakdownItem) => (
+              <Stack key={`${item.label}-${item.amount}`} direction="row" justifyContent="space-between" gap={2} alignItems="flex-start">
+                <Box>
+                  <Typography fontWeight={800}>{item.label}</Typography>
+                  {item.hint && (
+                    <Typography variant="caption" color="text.secondary">
+                      {item.hint}
+                    </Typography>
+                  )}
+                </Box>
+                <Typography fontWeight={900} color="secondary.dark" sx={{ whiteSpace: "nowrap" }}>
+                  {formatTariff(item.amount)}
+                </Typography>
+              </Stack>
+            ))}
+          </Stack>
+
+          {result.warnings.length > 0 && (
+            <Alert severity="warning">
+              <Stack spacing={0.75}>
+                {result.warnings.map((warning: string) => (
+                  <Typography key={warning} variant="body2">
+                    {warning}
+                  </Typography>
+                ))}
+              </Stack>
+            </Alert>
+          )}
+
+          <Alert severity="info">
+            Расчет справочный. Перед сдачей отчетности бухгалтер сверяет ставки, лимиты, льготы и статус налогоплательщика.
+          </Alert>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
+function calculateEmployeePayroll(
+  grossSalary: number,
+  options: {
+    entityType: "ip" | "too";
+    pensioner: boolean;
+    student: boolean;
+    nonResident: boolean;
+    useUnifiedPayment: boolean;
+  }
+) {
+  if (options.useUnifiedPayment) {
+    return {
+      opv: 0,
+      vosms: 0,
+      pit: 0,
+      socialContribution: 0,
+      socialTax: 0,
+      oosms: 0,
+      opvr: 0
+    };
+  }
+
+  const exemptSocial = options.pensioner || options.student;
+  const opv = exemptSocial ? 0 : Math.min(grossSalary * taxConstants.opvRate, taxLimits.opvMax);
+  const vosms = exemptSocial ? 0 : Math.min(grossSalary * taxConstants.vosmsRate, taxLimits.vosmsMax);
+  const taxableIncome = Math.max(0, grossSalary - opv - vosms - taxLimits.standardDeduction);
+  const pit = options.nonResident ? Math.max(0, grossSalary - opv - vosms) * taxConstants.highPitRate : progressivePit(taxableIncome);
+  const socialContributionBase = Math.max(0, grossSalary - opv);
+  const socialContribution = exemptSocial
+    ? 0
+    : clamp(socialContributionBase * taxConstants.socialContributionRate, taxLimits.socialContributionMin, taxLimits.socialContributionMax);
+  const oosms = exemptSocial ? 0 : Math.min(grossSalary * taxConstants.oosmsRate, taxLimits.oosmsMax);
+  const opvr = exemptSocial ? 0 : clamp(grossSalary * taxConstants.opvrRate, taxLimits.opvrMin, taxLimits.opvrMax);
+  const socialTax =
+    options.entityType === "ip"
+      ? taxConstants.mrp
+      : Math.max(0, (grossSalary - opv - vosms) * taxConstants.socialTaxRate - socialContribution);
+
+  return {
+    opv,
+    vosms,
+    pit,
+    socialContribution,
+    socialTax,
+    oosms,
+    opvr
+  };
+}
+
+function calculateGph(grossAmount: number, nonResident: boolean, exemptSocial: boolean) {
+  const opv = exemptSocial ? 0 : Math.min(grossAmount * taxConstants.opvRate, taxLimits.opvMax);
+  const vosms = exemptSocial ? 0 : Math.min(grossAmount * taxConstants.vosmsRate, taxLimits.vosmsMax);
+  const pitBase = Math.max(0, grossAmount - opv - vosms);
+  const pit = nonResident ? pitBase * taxConstants.highPitRate : progressivePit(pitBase);
+
+  return {
+    opv,
+    vosms,
+    pit
+  };
+}
+
+function resolveReverseIncome(
+  targetNet: number,
+  calculate: (businessIncome: number) => { total: number; net: number }
+) {
+  if (targetNet <= 0) {
+    return 0;
+  }
+
+  let low = targetNet;
+  let high = targetNet * 2 + 100000;
+
+  for (let index = 0; index < 24; index += 1) {
+    const result = calculate(high);
+    if (result.net >= targetNet) {
+      break;
+    }
+    high *= 1.6;
+  }
+
+  for (let index = 0; index < 42; index += 1) {
+    const middle = (low + high) / 2;
+    const result = calculate(middle);
+    if (result.net >= targetNet) {
+      high = middle;
+    } else {
+      low = middle;
+    }
+  }
+
+  return roundMoney(high);
 }
 
 function LeadQuiz() {
@@ -589,13 +1340,13 @@ export function LandingPage() {
           <Toolbar disableGutters sx={{ minHeight: 64 }}>
             <Box
               onClick={() => scrollToSection("top")}
-              sx={{ 
-                display: "flex", 
-                alignItems: "center", 
-                gap: 1.5, 
-                cursor: "pointer", 
-                flex: { xs: 1, md: "initial" }, 
-                mr: 5 
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                cursor: "pointer",
+                flex: { xs: 1, md: "initial" },
+                mr: 5
               }}
             >
               <img src="/logo.svg" alt="Logo" style={{ width: 32, height: 32 }} />
@@ -761,6 +1512,8 @@ export function LandingPage() {
 
       <LeadQuiz />
 
+      <TaxCalculator />
+
       <Box id="services" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "white" }}>
         <Container maxWidth="xl">
           <SectionTitle title="Наши услуги" subtitle="Полный спектр бухгалтерских услуг для вашего бизнеса" />
@@ -865,6 +1618,7 @@ export function LandingPage() {
       <Box id="pricing" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "background.default" }}>
         <Container maxWidth="xl">
           <SectionTitle title="Тарифы" subtitle="Выберите подходящий формат бухгалтерского сопровождения" />
+          <TariffCalculator />
           <Box display="grid" gridTemplateColumns={{ xs: "1fr", lg: "repeat(3, 1fr)" }} gap={3}>
             {pricing.map((plan) => (
               <Card key={plan.name} sx={{ position: "relative", overflow: "hidden", borderColor: plan.highlighted ? "primary.main" : "#F3F4F6", transform: { lg: plan.highlighted ? "scale(1.035)" : "none" } }}>

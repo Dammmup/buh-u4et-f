@@ -1,5 +1,7 @@
 import { createTheme } from "@mui/material/styles";
 
+const headingFont = '"Playfair Display", Georgia, serif';
+
 export const theme = createTheme({
   palette: {
     mode: "light",
@@ -33,12 +35,12 @@ export const theme = createTheme({
   typography: {
     fontFamily:
       'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    h1: { fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 900, letterSpacing: 0 },
-    h2: { fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 900, letterSpacing: 0 },
-    h3: { fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 800, letterSpacing: 0 },
-    h4: { fontWeight: 800, letterSpacing: 0 },
-    h5: { fontWeight: 700, letterSpacing: 0 },
-    h6: { fontWeight: 700, letterSpacing: 0 },
+    h1: { fontFamily: headingFont, fontWeight: 900, letterSpacing: 0 },
+    h2: { fontFamily: headingFont, fontWeight: 900, letterSpacing: 0 },
+    h3: { fontFamily: headingFont, fontWeight: 800, letterSpacing: 0 },
+    h4: { fontFamily: headingFont, fontWeight: 800, letterSpacing: 0 },
+    h5: { fontFamily: headingFont, fontWeight: 800, letterSpacing: 0 },
+    h6: { fontFamily: headingFont, fontWeight: 800, letterSpacing: 0 },
     button: { fontWeight: 700, letterSpacing: 0, textTransform: "none" }
   },
   components: {

@@ -3,6 +3,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ReplayIcon from "@mui/icons-material/Replay";
 import SaveIcon from "@mui/icons-material/Save";
+import SendIcon from "@mui/icons-material/Send";
 import {
   Accordion,
   AccordionDetails,
@@ -70,6 +71,13 @@ const ruleTypeLabels: Record<PricingRuleType, string> = {
   tiered: "Ступенчатая цена",
   percentage: "Процент от subtotal"
 };
+
+interface TelegramSettings {
+  chatId: string;
+  chatIdConfigured: boolean;
+  tokenConfigured: boolean;
+  updatedAt?: string;
+}
 
 function optionalNumber(value: string): number | undefined {
   return value === "" ? undefined : Number(value);
@@ -154,6 +162,8 @@ export function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [services, setServices] = useState<AccountingService[]>([]);
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
+  const [telegramSettings, setTelegramSettings] = useState<TelegramSettings | null>(null);
+  const [telegramChatId, setTelegramChatId] = useState("");
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState("");
   const [message, setMessage] = useState("");
@@ -163,12 +173,15 @@ export function AdminPage() {
     setLoading(true);
     setError("");
     try {
-      const [ordersResponse, servicesResponse] = await Promise.all([
+      const [ordersResponse, servicesResponse, telegramResponse] = await Promise.all([
         api.get<{ orders: Order[] }>("/orders/admin/all"),
-        api.get<{ services: AccountingService[] }>("/services?includeInactive=true")
+        api.get<{ services: AccountingService[] }>("/services?includeInactive=true"),
+        api.get<{ settings: TelegramSettings }>("/settings/telegram")
       ]);
       setOrders(ordersResponse.data.orders);
       setServices(servicesResponse.data.services);
+      setTelegramSettings(telegramResponse.data.settings);
+      setTelegramChatId(telegramResponse.data.settings.chatId);
     } catch {
       setError("Не удалось загрузить данные админ панели.");
     } finally {
@@ -249,6 +262,38 @@ export function AdminPage() {
     }
   };
 
+  const saveTelegramSettings = async () => {
+    setSavingId("telegram-settings");
+    setMessage("");
+    setError("");
+    try {
+      const response = await api.put<{ settings: TelegramSettings }>("/settings/telegram", {
+        chatId: telegramChatId
+      });
+      setTelegramSettings(response.data.settings);
+      setTelegramChatId(response.data.settings.chatId);
+      setMessage("Telegram chat_id сохранен.");
+    } catch {
+      setError("Не удалось сохранить Telegram chat_id.");
+    } finally {
+      setSavingId("");
+    }
+  };
+
+  const testTelegram = async () => {
+    setSavingId("telegram-test");
+    setMessage("");
+    setError("");
+    try {
+      await api.post("/settings/telegram/test");
+      setMessage("Тестовое сообщение отправлено в Telegram.");
+    } catch {
+      setError("Не удалось отправить тестовое сообщение. Проверьте токен бота и chat_id.");
+    } finally {
+      setSavingId("");
+    }
+  };
+
   const totalRevenue = orders.reduce((sum, order) => sum + order.calculation.total, 0);
   const activeServices = services.filter((service) => service.isActive).length;
 
@@ -278,6 +323,7 @@ export function AdminPage() {
         <Tabs value={tab} onChange={(_event, value) => setTab(value)} sx={{ px: 2, borderBottom: "1px solid", borderColor: "divider" }}>
           <Tab label="Заказы" />
           <Tab label="Услуги и цены" />
+          <Tab label="Telegram" />
         </Tabs>
 
         <Box sx={{ p: { xs: 2, md: 3 } }}>
@@ -438,6 +484,64 @@ export function AdminPage() {
                   onDelete={() => deleteService(service)}
                 />
               ))}
+            </Stack>
+          )}
+
+          {tab === 2 && (
+            <Stack spacing={2.5}>
+              <Typography variant="h6">Telegram заявки</Typography>
+              <Paper elevation={0} sx={{ p: { xs: 2.5, md: 3 }, bgcolor: "background.default", border: "1px solid", borderColor: "divider" }}>
+                <Stack spacing={2.5}>
+                  <Stack direction="row" flexWrap="wrap" gap={1}>
+                    <Chip
+                      label={telegramSettings?.tokenConfigured ? "Bot token подключен" : "Нужен TELEGRAM_BOT_TOKEN"}
+                      color={telegramSettings?.tokenConfigured ? "success" : "warning"}
+                    />
+                    <Chip
+                      label={telegramSettings?.chatIdConfigured ? "chat_id сохранен" : "chat_id не задан"}
+                      color={telegramSettings?.chatIdConfigured ? "success" : "warning"}
+                    />
+                  </Stack>
+
+                  <TextField
+                    label="Telegram chat_id"
+                    value={telegramChatId}
+                    onChange={(event) => setTelegramChatId(event.target.value)}
+                    placeholder="-1001234567890"
+                    helperText="Добавьте бота в нужный чат или группу, затем сохраните chat_id. Токен бота хранится только в переменных окружения backend."
+                    fullWidth
+                  />
+
+                  {telegramSettings?.updatedAt && (
+                    <Typography variant="body2" color="text.secondary">
+                      Последнее обновление: {formatDateTime(telegramSettings.updatedAt)}
+                    </Typography>
+                  )}
+
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+                    <Button
+                      variant="contained"
+                      startIcon={<SaveIcon />}
+                      onClick={saveTelegramSettings}
+                      disabled={savingId === "telegram-settings"}
+                    >
+                      Сохранить chat_id
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<SendIcon />}
+                      onClick={testTelegram}
+                      disabled={
+                        savingId === "telegram-test" ||
+                        !telegramSettings?.tokenConfigured ||
+                        telegramChatId.trim().length === 0
+                      }
+                    >
+                      Отправить тест
+                    </Button>
+                  </Stack>
+                </Stack>
+              </Paper>
             </Stack>
           )}
         </Box>
