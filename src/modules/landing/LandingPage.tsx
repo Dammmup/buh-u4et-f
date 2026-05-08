@@ -59,12 +59,11 @@ import { Link as RouterLink } from "react-router-dom";
 import { api } from "../../shared/api/client";
 
 const navItems = [
-  { label: "Услуги", target: "services" },
+  { label: "Что нужно", target: "services" },
+  { label: "Актуально", target: "seasonal" },
   { label: "Калькулятор", target: "tax-calculator" },
-  { label: "Прайс", target: "price-list" },
   { label: "Тарифы", target: "pricing" },
-  { label: "Как работаем", target: "how-it-works" },
-  { label: "FAQ", target: "faq" }
+  { label: "Прайс", target: "price-list" }
 ];
 
 const brandName = "Bukhuchet.kz";
@@ -80,6 +79,16 @@ type TariffActivity = "service" | "trade" | "production";
 type TaxMode = "ip_usn" | "ip_our" | "too_usn" | "too_our" | "reverse" | "unified";
 type CalculationDirection = "direct" | "reverse";
 type Residency = "citizen" | "foreigner";
+type ServiceCalculatorKey =
+  | "form328"
+  | "salary"
+  | "form300"
+  | "esf"
+  | "snt"
+  | "ipRegistration"
+  | "tooRegistration"
+  | "ipSuspension"
+  | "taxPolicy";
 
 const tariffOptions = {
   forms: [
@@ -146,8 +155,7 @@ const taxConstants = {
   simplifiedTooRate: 0.03,
   citRate: 0.2,
   pitRate: 0.1,
-  highPitRate: 0.15,
-  vatRate: 0.16
+  highPitRate: 0.15
 };
 
 const taxLimits = {
@@ -162,36 +170,203 @@ const taxLimits = {
   monthlyProgressivePitThreshold: (taxConstants.mrp * 8500) / 12
 };
 
+const serviceCalculatorOptions: {
+  key: ServiceCalculatorKey;
+  title: string;
+  description: string;
+  basePrice: number;
+  parameterLabel?: string;
+  parameterName?: string;
+  unitPrice?: number;
+  includedUnits?: number;
+  unitStep?: number;
+  unitSuffix?: string;
+}[] = [
+  {
+    key: "form328",
+    title: "Форма 328",
+    description: "Декларация до 10 строк включительно",
+    basePrice: 20000,
+    parameterLabel: "Дополнительные строки",
+    parameterName: "extraRows",
+    unitPrice: 1000,
+    includedUnits: 10,
+    unitSuffix: "стр."
+  },
+  {
+    key: "salary",
+    title: "Расчет зарплаты",
+    description: "Расчет по системе оплаты труда заказчика",
+    basePrice: 5000,
+    parameterLabel: "Количество сотрудников",
+    parameterName: "employeesCount",
+    unitPrice: 5000,
+    includedUnits: 1,
+    unitSuffix: "сотр."
+  },
+  {
+    key: "form300",
+    title: "Форма 300",
+    description: "Отчетность по данным портала ИС ЭСФ",
+    basePrice: 30000,
+    parameterLabel: "Количество работников",
+    parameterName: "employeesCount",
+    unitPrice: 1500,
+    includedUnits: 0,
+    unitSuffix: "сотр."
+  },
+  {
+    key: "esf",
+    title: "ЭСФ",
+    description: "Формирование электронных счетов-фактур",
+    basePrice: 5000,
+    parameterLabel: "Количество позиций",
+    parameterName: "itemsCount",
+    unitPrice: 3000,
+    includedUnits: 5,
+    unitStep: 5,
+    unitSuffix: "поз."
+  },
+  {
+    key: "snt",
+    title: "СНТ",
+    description: "Формирование сопроводительных накладных",
+    basePrice: 5000,
+    parameterLabel: "Количество позиций",
+    parameterName: "itemsCount",
+    unitPrice: 3000,
+    includedUnits: 5,
+    unitStep: 5,
+    unitSuffix: "поз."
+  },
+  {
+    key: "ipRegistration",
+    title: "Регистрация ИП",
+    description: "Базовая регистрация предпринимателя",
+    basePrice: 5000
+  },
+  {
+    key: "tooRegistration",
+    title: "Регистрация ТОО",
+    description: "Подготовка и подача документов",
+    basePrice: 30000
+  },
+  {
+    key: "ipSuspension",
+    title: "Приостановление отчетности ИП",
+    description: "Приостановление сдачи налоговой отчетности",
+    basePrice: 5000
+  },
+  {
+    key: "taxPolicy",
+    title: "Налоговая учетная политика",
+    description: "Разработка налоговой учетной политики",
+    basePrice: 25000
+  }
+];
+
 const serviceCards = [
   {
     icon: <ArticleIcon />,
-    title: "Бухгалтерское сопровождение",
-    description: "Полный цикл учета от первичных документов до отчетности."
-  },
-  {
-    icon: <RestoreIcon />,
-    title: "Восстановление учета",
-    description: "Приведение в порядок запущенной бухгалтерии любой сложности."
+    title: "Сдать отчетность",
+    description: "Формы 910, 300, 328, 200 и другие отчеты без лишних разборов для клиента.",
+    action: "Подобрать форму"
   },
   {
     icon: <GroupsIcon />,
-    title: "Кадровый учет и зарплаты",
-    description: "Расчет зарплат, налогов, взносов и отчетность по сотрудникам."
+    title: "Рассчитать зарплату",
+    description: "Зарплата, кадровые документы, Enbek.kz и справки по сотрудникам.",
+    action: "Рассчитать"
   },
   {
-    icon: <CalculateIcon />,
-    title: "Налоговая отчетность",
-    description: "Формы 910, 300, 328 и другие декларации с прозрачным расчетом."
+    icon: <ReceiptLongIcon />,
+    title: "Оформить ЭСФ / СНТ / АВР",
+    description: "Электронные документы, позиции, корректировки и регистрация на портале.",
+    action: "Посчитать позиции"
   },
   {
-    icon: <AssignmentTurnedInIcon />,
-    title: "Первичная документация",
-    description: "Проверка, формирование и контроль корректности документов."
+    icon: <BusinessIcon />,
+    title: "Открыть или закрыть бизнес",
+    description: "Регистрация ИП/ТОО, ликвидация, приостановление отчетности.",
+    action: "Выбрать услугу"
   },
   {
-    icon: <ShieldIcon />,
-    title: "Проверка контрагентов",
-    description: "Минимизация налоговых рисков перед сделками и оплатами."
+    icon: <AccountBalanceIcon />,
+    title: "Вести учет каждый месяц",
+    description: "Аутсорс бухгалтерии для ИП и ТОО с отчетностью и сопровождением.",
+    action: "Подобрать тариф"
+  },
+  {
+    icon: <RestoreIcon />,
+    title: "Восстановить учет",
+    description: "Если отчетность или документы накопились, поможем привести все в порядок.",
+    action: "Оставить заявку"
+  }
+];
+
+const frequentServices = [
+  {
+    title: "Форма 910",
+    description: "Упрощенная декларация для ИП",
+    price: "от 7 000 тг",
+    tag: "часто"
+  },
+  {
+    title: "Форма 300",
+    description: "Отчетность по НДС/ЭСФ",
+    price: "от 30 000 тг",
+    tag: "отчетность"
+  },
+  {
+    title: "Форма 328",
+    description: "До 10 строк, доп. строки отдельно",
+    price: "от 20 000 тг",
+    tag: "расчет"
+  },
+  {
+    title: "Расчет зарплаты",
+    description: "По системе оплаты труда заказчика",
+    price: "от 5 000 тг",
+    tag: "кадры"
+  },
+  {
+    title: "ЭСФ / СНТ",
+    description: "Позиции и электронные документы",
+    price: "от 5 000 тг",
+    tag: "документы"
+  },
+  {
+    title: "Регистрация ИП",
+    description: "Базовое оформление",
+    price: "от 5 000 тг",
+    tag: "старт"
+  }
+];
+
+const seasonalGroups = [
+  {
+    label: "Сейчас актуально",
+    title: "Проверить ближайшие отчеты",
+    description: "Бухгалтер уточнит вашу форму, период и дедлайн, чтобы не пропустить срок.",
+    items: ["Форма 910", "Форма 300", "Расчет дохода по ОФД", "Зарплата и кадровые документы"]
+  },
+  {
+    label: "Ежемесячно",
+    title: "Операционная бухгалтерия",
+    description: "То, что предприниматели чаще всего делают каждый месяц.",
+    items: ["Зарплата", "ЭСФ", "СНТ", "АВР", "Первичные документы"]
+  },
+  {
+    label: "Ежеквартально",
+    title: "Квартальная отчетность",
+    description: "Подходит для ИП и ТОО, которым нужно закрыть отчетный период.",
+    items: ["Форма 910", "Форма 300", "Форма 200", "Комплексная бухуслуга"]
+  },
+  {
+    label: "Годовой период",
+    title: "Закрытие года",
+    description: "Годовые отчеты, учетная политика и сверка документов.",
+    items: ["Форма 700/701", "Форма 328", "Налоговая учетная политика", "Восстановление учета"]
   }
 ];
 
@@ -568,6 +743,338 @@ function TariffToggle<T extends string>({
         ))}
       </ToggleButtonGroup>
     </Stack>
+  );
+}
+
+function ClientNeedsSection() {
+  return (
+    <Box id="services" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "white" }}>
+      <Container maxWidth="xl">
+        <SectionTitle
+          title="Что вам нужно сейчас?"
+          subtitle="Выберите понятный сценарий. Форму, сроки и точный состав работ уточнит бухгалтер."
+        />
+        <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={3}>
+          {serviceCards.map((service) => (
+            <Card key={service.title} sx={{ transition: "0.2s", "&:hover": { borderColor: "primary.main", transform: "translateY(-4px)" } }}>
+              <CardContent sx={{ p: 4, height: "100%" }}>
+                <Stack spacing={2.5} height="100%">
+                  <IconTile>{service.icon}</IconTile>
+                  <Typography variant="h5">{service.title}</Typography>
+                  <Typography color="text.secondary" sx={{ lineHeight: 1.7, flex: 1 }}>
+                    {service.description}
+                  </Typography>
+                  <Button variant="outlined" onClick={() => scrollToSection("tax-calculator")} sx={{ alignSelf: "flex-start" }}>
+                    {service.action}
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
+      </Container>
+    </Box>
+  );
+}
+
+function SeasonalServicesSection() {
+  const currentMonth = new Intl.DateTimeFormat("ru-KZ", { month: "long" }).format(new Date());
+
+  return (
+    <Box id="seasonal" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "background.default" }}>
+      <Container maxWidth="xl">
+        <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={3} mb={{ xs: 5, md: 7 }}>
+          <Box>
+            <Typography variant="h2" mb={2}>
+              Актуально сейчас
+            </Typography>
+            <Typography color="text.secondary" sx={{ maxWidth: 760, fontSize: 18 }}>
+              В {currentMonth} чаще всего уточняют отчетность, зарплату и электронные документы. Показываем клиенту только основные сценарии, без перегруза налоговым календарем.
+            </Typography>
+          </Box>
+          <Button variant="contained" onClick={() => scrollToSection("contact")} sx={{ alignSelf: { xs: "flex-start", md: "center" } }}>
+            Спросить бухгалтера
+          </Button>
+        </Stack>
+
+        <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(2, 1fr)", xl: "repeat(4, 1fr)" }} gap={3}>
+          {seasonalGroups.map((group) => (
+            <Card key={group.label} sx={{ borderColor: group.label === "Сейчас актуально" ? "secondary.main" : "#F3F4F6" }}>
+              <CardContent sx={{ p: 3.5 }}>
+                <Stack spacing={2.25}>
+                  <Chip label={group.label} color={group.label === "Сейчас актуально" ? "secondary" : "primary"} sx={{ alignSelf: "flex-start" }} />
+                  <Typography variant="h5">{group.title}</Typography>
+                  <Typography color="text.secondary" sx={{ lineHeight: 1.65 }}>
+                    {group.description}
+                  </Typography>
+                  <Stack spacing={1}>
+                    {group.items.map((item) => (
+                      <Stack key={item} direction="row" spacing={1.25} alignItems="center">
+                        <CheckIcon color="primary" fontSize="small" />
+                        <Typography color="text.secondary">{item}</Typography>
+                      </Stack>
+                    ))}
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
+      </Container>
+    </Box>
+  );
+}
+
+function FrequentServicesSection() {
+  return (
+    <Box component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "white" }}>
+      <Container maxWidth="xl">
+        <SectionTitle
+          title="Часто заказывают"
+          subtitle="Самые частые услуги вынесены отдельно, чтобы клиенту не приходилось искать их в полном прайсе."
+        />
+        <Box display="grid" gridTemplateColumns={{ xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={3}>
+          {frequentServices.map((service) => (
+            <Card key={service.title} sx={{ "&:hover": { borderColor: "secondary.main" } }}>
+              <CardContent sx={{ p: 3.5 }}>
+                <Stack spacing={2}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={2}>
+                    <Typography variant="h5">{service.title}</Typography>
+                    <Chip label={service.tag} size="small" color="primary" variant="outlined" />
+                  </Stack>
+                  <Typography color="text.secondary">{service.description}</Typography>
+                  <Typography variant="h5" color="secondary.dark">
+                    {service.price}
+                  </Typography>
+                  <Button variant="outlined" onClick={() => scrollToSection("tax-calculator")}>
+                    Рассчитать
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
+      </Container>
+    </Box>
+  );
+}
+
+function ServiceCostCalculator() {
+  const [selectedKey, setSelectedKey] = useState<ServiceCalculatorKey>("form328");
+  const [quantity, setQuantity] = useState("0");
+  const [urgent, setUrgent] = useState(false);
+  const [withDigitalSubmission, setWithDigitalSubmission] = useState(true);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const selectedService =
+    serviceCalculatorOptions.find((service) => service.key === selectedKey) ?? serviceCalculatorOptions[0];
+  const rawQuantity = selectedService.parameterName ? parseAmount(quantity) : 0;
+  const chargeableUnits = selectedService.parameterName
+    ? Math.max(0, rawQuantity - (selectedService.includedUnits ?? 0))
+    : 0;
+  const pricedUnits = selectedService.unitStep
+    ? Math.ceil(chargeableUnits / selectedService.unitStep)
+    : chargeableUnits;
+  const parameterPrice = roundMoney(pricedUnits * (selectedService.unitPrice ?? 0));
+  const digitalSubmissionPrice = withDigitalSubmission ? 0 : 0;
+  const subtotal = selectedService.basePrice + parameterPrice + digitalSubmissionPrice;
+  const urgentPrice = urgent ? roundMoney(subtotal * 0.5) : 0;
+  const total = subtotal + urgentPrice;
+  const canSubmit = name.trim().length >= 2 && phone.trim().length >= 5;
+
+  const calculationLines = [
+    `Услуга: ${selectedService.title}`,
+    `Базовая цена: ${formatTariff(selectedService.basePrice)}`,
+    selectedService.parameterName
+      ? `${selectedService.parameterLabel}: ${rawQuantity} ${selectedService.unitSuffix ?? ""}`
+      : null,
+    parameterPrice > 0 ? `Доп. объем: ${formatTariff(parameterPrice)}` : null,
+    urgent ? `Срочность: ${formatTariff(urgentPrice)}` : null,
+    `Сдача с ЭЦП: ${withDigitalSubmission ? "да" : "нет"}`,
+    `Итого: ${formatTariff(total)}`
+  ].filter(Boolean);
+
+  const submitRequest = async (event: FormEvent) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError("");
+
+    try {
+      await api.post("/leads", {
+        source: "service_calculator",
+        name,
+        phone,
+        services: [selectedService.title],
+        message: calculationLines.join("\n"),
+        calculation: {
+          serviceKey: selectedService.key,
+          serviceTitle: selectedService.title,
+          basePrice: selectedService.basePrice,
+          quantity: rawQuantity,
+          parameterPrice,
+          urgent,
+          urgentPrice,
+          withDigitalSubmission,
+          total
+        }
+      });
+      setSubmitted(true);
+      setName("");
+      setPhone("");
+      window.setTimeout(() => setSubmitted(false), 4000);
+    } catch {
+      setError("Не удалось отправить расчет. Попробуйте позже или напишите нам в WhatsApp.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Box id="tax-calculator" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "background.default" }}>
+      <Container maxWidth="xl">
+        <SectionTitle
+          title="Рассчитайте стоимость услуги"
+          subtitle="Выберите нужную бухгалтерскую услугу и параметры. Клиент видит ориентировочную стоимость, а заявка уходит специалисту."
+        />
+
+        <Box display="grid" gridTemplateColumns={{ xs: "1fr", lg: "1fr 0.48fr" }} gap={3} alignItems="stretch">
+          <Card sx={{ overflow: "hidden" }}>
+            <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: "#F8FAFC", borderBottom: "1px solid #E5E7EB" }}>
+              <ToggleButtonGroup
+                exclusive
+                value={selectedKey}
+                onChange={(_event, nextValue: ServiceCalculatorKey | null) => {
+                  if (nextValue) {
+                    setSelectedKey(nextValue);
+                    setQuantity("0");
+                  }
+                }}
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+                  gap: 1,
+                  "& .MuiToggleButtonGroup-grouped": {
+                    border: "1px solid #D1D5DB !important",
+                    borderRadius: "8px !important",
+                    justifyContent: "flex-start",
+                    minHeight: 54,
+                    px: 2
+                  }
+                }}
+              >
+                {serviceCalculatorOptions.map((service) => (
+                  <ToggleButton key={service.key} value={service.key}>
+                    {service.title}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </Box>
+
+            <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+              <Stack spacing={3}>
+                <Box>
+                  <Typography variant="h4">{selectedService.title}</Typography>
+                  <Typography color="text.secondary">{selectedService.description}</Typography>
+                </Box>
+
+                <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: selectedService.parameterName ? "1fr 1fr" : "1fr" }} gap={2}>
+                  <TextField label="Базовая цена" value={formatTariff(selectedService.basePrice)} disabled />
+                  {selectedService.parameterName && (
+                    <TextField
+                      label={selectedService.parameterLabel}
+                      value={quantity}
+                      onChange={(event) => setQuantity(event.target.value)}
+                      type="number"
+                      helperText={
+                        selectedService.includedUnits
+                          ? `В базовую цену входит до ${selectedService.includedUnits} ${selectedService.unitSuffix ?? ""}`
+                          : "Дополнительный объем считается по прайсу"
+                      }
+                    />
+                  )}
+                </Box>
+
+                <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "1fr 1fr" }} gap={2}>
+                  <MuiFormControlLabel
+                    control={<Checkbox checked={urgent} onChange={(event) => setUrgent(event.target.checked)} />}
+                    label="Срочный расчет +50%"
+                  />
+                  <MuiFormControlLabel
+                    control={
+                      <Checkbox
+                        checked={withDigitalSubmission}
+                        onChange={(event) => setWithDigitalSubmission(event.target.checked)}
+                      />
+                    }
+                    label="Нужна сдача/оформление с ЭЦП"
+                  />
+                </Box>
+
+                <Alert severity="info">
+                  Итог является ориентировочным. Бухгалтер уточнит стоимость после проверки документов, периода и объема работ.
+                </Alert>
+
+                <Box component="form" onSubmit={submitRequest} display="grid" gridTemplateColumns={{ xs: "1fr", md: "1fr 1fr auto" }} gap={2}>
+                  <TextField label="Ваше имя" value={name} onChange={(event) => setName(event.target.value)} required />
+                  <TextField label="Телефон" value={phone} onChange={(event) => setPhone(event.target.value)} required />
+                  <Button type="submit" variant="contained" disabled={!canSubmit || submitting} sx={{ minHeight: 56 }}>
+                    {submitting ? <CircularProgress size={22} color="inherit" /> : "Отправить"}
+                  </Button>
+                </Box>
+
+                {submitted && <Alert severity="success">Расчет отправлен. Специалист свяжется с вами.</Alert>}
+                {error && <Alert severity="error">{error}</Alert>}
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ alignSelf: "flex-start", position: { lg: "sticky" }, top: { lg: 88 } }}>
+            <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+              <Stack spacing={2.5}>
+                <Chip label="Ориентировочная стоимость" color="secondary" sx={{ alignSelf: "flex-start" }} />
+                <Box>
+                  <Typography color="text.secondary">Итого к оплате</Typography>
+                  <Typography variant="h3" color="secondary.dark">
+                    {formatTariff(total)}
+                  </Typography>
+                </Box>
+
+                <Divider />
+
+                <Stack spacing={1.5}>
+                  <Stack direction="row" justifyContent="space-between" gap={2}>
+                    <Typography color="text.secondary">Базовая цена</Typography>
+                    <Typography fontWeight={900}>{formatTariff(selectedService.basePrice)}</Typography>
+                  </Stack>
+                  {selectedService.parameterName && (
+                    <Stack direction="row" justifyContent="space-between" gap={2}>
+                      <Typography color="text.secondary">Доп. объем</Typography>
+                      <Typography fontWeight={900}>{formatTariff(parameterPrice)}</Typography>
+                    </Stack>
+                  )}
+                  {urgent && (
+                    <Stack direction="row" justifyContent="space-between" gap={2}>
+                      <Typography color="text.secondary">Срочность</Typography>
+                      <Typography fontWeight={900}>{formatTariff(urgentPrice)}</Typography>
+                    </Stack>
+                  )}
+                </Stack>
+
+                <Divider />
+
+                <Typography variant="body2" color="text.secondary">
+                  При отправке заявки в Telegram уйдет выбранная услуга, параметры расчета, итоговая сумма, имя и телефон клиента.
+                </Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
+      </Container>
+    </Box>
   );
 }
 
@@ -1512,28 +2019,13 @@ export function LandingPage() {
 
       <LeadQuiz />
 
-      <TaxCalculator />
+      <ClientNeedsSection />
 
-      <Box id="services" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "white" }}>
-        <Container maxWidth="xl">
-          <SectionTitle title="Наши услуги" subtitle="Полный спектр бухгалтерских услуг для вашего бизнеса" />
-          <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={3}>
-            {serviceCards.map((service) => (
-              <Card key={service.title} sx={{ transition: "0.2s", "&:hover": { borderColor: "primary.main", transform: "translateY(-4px)" } }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Stack spacing={2.5}>
-                    <IconTile>{service.icon}</IconTile>
-                    <Typography variant="h5">{service.title}</Typography>
-                    <Typography color="text.secondary" sx={{ lineHeight: 1.7 }}>
-                      {service.description}
-                    </Typography>
-                  </Stack>
-                </CardContent>
-              </Card>
-            ))}
-          </Box>
-        </Container>
-      </Box>
+      <SeasonalServicesSection />
+
+      <ServiceCostCalculator />
+
+      <FrequentServicesSection />
 
       <Box component="section" sx={{ py: { xs: 8, md: 10 }, background: "linear-gradient(135deg, #1E3A8A 0%, #172554 100%)" }}>
         <Container maxWidth="xl">
