@@ -1,6 +1,6 @@
 import { createTheme } from "@mui/material/styles";
 
-const headingFont = '"Playfair Display", Georgia, serif';
+const appFont = 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 export const theme = createTheme({
   palette: {
@@ -33,14 +33,13 @@ export const theme = createTheme({
     borderRadius: 8
   },
   typography: {
-    fontFamily:
-      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    h1: { fontFamily: headingFont, fontWeight: 900, letterSpacing: 0 },
-    h2: { fontFamily: headingFont, fontWeight: 900, letterSpacing: 0 },
-    h3: { fontFamily: headingFont, fontWeight: 800, letterSpacing: 0 },
-    h4: { fontFamily: headingFont, fontWeight: 800, letterSpacing: 0 },
-    h5: { fontFamily: headingFont, fontWeight: 800, letterSpacing: 0 },
-    h6: { fontFamily: headingFont, fontWeight: 800, letterSpacing: 0 },
+    fontFamily: appFont,
+    h1: { fontFamily: appFont, fontWeight: 800, letterSpacing: 0 },
+    h2: { fontFamily: appFont, fontWeight: 800, letterSpacing: 0 },
+    h3: { fontFamily: appFont, fontWeight: 750, letterSpacing: 0 },
+    h4: { fontFamily: appFont, fontWeight: 750, letterSpacing: 0 },
+    h5: { fontFamily: appFont, fontWeight: 750, letterSpacing: 0 },
+    h6: { fontFamily: appFont, fontWeight: 750, letterSpacing: 0 },
     button: { fontWeight: 700, letterSpacing: 0, textTransform: "none" }
   },
   components: {

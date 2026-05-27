@@ -72,6 +72,19 @@ const contactPhoneHref = "tel:+77778036788";
 const whatsappHref = "https://wa.me/77778036788";
 const contactEmail = "bukhuchet88@gmail.com";
 const contactAddress = "Навои 323";
+const phoneHelperText = "Введите казахстанский номер в формате +7 7XX XXX XX XX";
+
+const normalizePhoneDigits = (value: string) => {
+  const digits = value.replace(/\D/g, "");
+
+  if (digits.length === 11 && digits.startsWith("8")) {
+    return `7${digits.slice(1)}`;
+  }
+
+  return digits;
+};
+
+const isValidPhone = (value: string) => /^77\d{9}$/.test(normalizePhoneDigits(value));
 
 type TariffForm = "ip" | "too";
 type TariffRegime = "simplified" | "general";
@@ -185,7 +198,7 @@ const serviceCalculatorOptions: {
   {
     key: "form328",
     title: "Форма 328",
-    description: "Декларация до 10 строк включительно",
+    description: "Импорт и экспорт по Евразийскому союзу, до 10 строк включительно",
     basePrice: 20000,
     parameterLabel: "Дополнительные строки",
     parameterName: "extraRows",
@@ -242,20 +255,20 @@ const serviceCalculatorOptions: {
   {
     key: "ipRegistration",
     title: "Регистрация ИП",
-    description: "Базовая регистрация предпринимателя",
-    basePrice: 5000
+    description: "Регистрация ИП и первичная консультация",
+    basePrice: 24000
   },
   {
     key: "tooRegistration",
     title: "Регистрация ТОО",
     description: "Подготовка и подача документов",
-    basePrice: 30000
+    basePrice: 84000
   },
   {
     key: "ipSuspension",
-    title: "Приостановление отчетности ИП",
-    description: "Приостановление сдачи налоговой отчетности",
-    basePrice: 5000
+    title: "Заявление на приостановление",
+    description: "Подготовка заявления на приостановление сдачи отчетности",
+    basePrice: 12000
   },
   {
     key: "taxPolicy",
@@ -287,7 +300,7 @@ const serviceCards = [
   {
     icon: <BusinessIcon />,
     title: "Открыть или закрыть бизнес",
-    description: "Регистрация ИП/ТОО, ликвидация, приостановление отчетности.",
+    description: "Регистрация ИП/ТОО, смена режима, ОКЭД и приостановление отчетности.",
     action: "Выбрать услугу"
   },
   {
@@ -319,14 +332,14 @@ const frequentServices = [
   },
   {
     title: "Форма 328",
-    description: "До 10 строк, доп. строки отдельно",
+    description: "Импорт/экспорт по ЕАЭС, до 10 строк",
     price: "от 20 000 тг",
     tag: "расчет"
   },
   {
     title: "Расчет зарплаты",
     description: "По системе оплаты труда заказчика",
-    price: "от 5 000 тг",
+    price: "от 24 000 тг",
     tag: "кадры"
   },
   {
@@ -394,7 +407,7 @@ const priceList = [
       { name: "Форма 200 с 1 работником", price: "7 000 тг" },
       { name: "Плюс расчет дохода по ОФД и выпискам", price: "10 000 тг" },
       { name: "Комплексная бухгалтерская услуга", price: "50 000 тг" },
-      { name: "Форма 328 (до 10 строк)", price: "20 000 тг" },
+      { name: "Форма 328 (импорт/экспорт по ЕАЭС; до 10 строк)", price: "20 000 тг" },
       { name: "Форма 700 (земля, имущество, транспорт)", price: "15 000 тг" },
       { name: "Форма 701", price: "15 000 тг" },
       { name: "Дополнительная строка для формы 328", price: "1 000 тг" }
@@ -407,7 +420,8 @@ const priceList = [
       { name: "Регистрация на портале ИС ЭСФ", price: "5 000 тг" },
       { name: "ЭСФ плюс за каждые 5 позиций", price: "3 000 тг" },
       { name: "СНТ плюс за каждые 5 позиций", price: "3 000 тг" },
-      { name: "Выписка документа 1-10 позиций", price: "5 000 тг" },
+      { name: "Выписка ЭСФ (разово; до 10 строк)", price: "от 17 000 тг" },
+      { name: "Выписка первичного СНТ по импорту (до 10 строк)", price: "от 30 000 тг" },
       { name: "АВР бумажный, электронный 1-10 позиций", price: "5 000 тг" }
     ]
   },
@@ -421,17 +435,20 @@ const priceList = [
   },
   {
     icon: <CalculateIcon />,
-    title: "Регистрация/ликвидация",
+    title: "Регистрация и изменения",
     items: [
       {
         name: "Регистрация ТОО: устав на русском и казахском, решение учредителя, приказ о назначении, справка о госрегистрации",
-        price: "30 000 тг"
+        price: "от 84 000 тг"
       },
-      { name: "Регистрация ИП плюс настройка Kaspi Pay", price: "10 000 тг" },
-      { name: "Регистрация ИП", price: "5 000 тг" },
-      { name: "Приостановление сдачи налоговой отчетности ИП", price: "5 000 тг" },
+      { name: "Регистрация ИП + первичная консультация", price: "от 24 000 тг" },
+      { name: "Смена ОКЭД", price: "от 12 000 тг" },
+      { name: "Ответ на уведомление", price: "от 17 000 тг" },
+      { name: "Постановка на НДС", price: "от 12 000 тг" },
+      { name: "Переброска налогов", price: "от 12 000 тг" },
+      { name: "Смена налогового режима", price: "от 12 000 тг" },
+      { name: "Заявление на приостановление", price: "от 12 000 тг" },
       { name: "Разработка налоговой учетной политики", price: "25 000 тг" },
-      { name: "Ликвидация ТОО", price: "80 000 тг" },
       { name: "Ликвидация ИП", price: "20 000 тг" }
     ]
   },
@@ -884,7 +901,9 @@ function ServiceCostCalculator() {
   const subtotal = selectedService.basePrice + parameterPrice + digitalSubmissionPrice;
   const urgentPrice = urgent ? roundMoney(subtotal * 0.5) : 0;
   const total = subtotal + urgentPrice;
-  const canSubmit = name.trim().length >= 2 && phone.trim().length >= 5;
+  const phoneIsValid = isValidPhone(phone);
+  const showPhoneError = phone.trim().length > 0 && !phoneIsValid;
+  const canSubmit = name.trim().length >= 2 && phoneIsValid;
 
   const calculationLines = [
     `Услуга: ${selectedService.title}`,
@@ -900,6 +919,10 @@ function ServiceCostCalculator() {
 
   const submitRequest = async (event: FormEvent) => {
     event.preventDefault();
+    if (!canSubmit) {
+      setError(phoneHelperText);
+      return;
+    }
     setSubmitting(true);
     setError("");
 
@@ -907,7 +930,7 @@ function ServiceCostCalculator() {
       await api.post("/leads", {
         source: "service_calculator",
         name,
-        phone,
+        phone: normalizePhoneDigits(phone),
         services: [selectedService.title],
         message: calculationLines.join("\n"),
         calculation: {
@@ -1020,7 +1043,15 @@ function ServiceCostCalculator() {
 
                 <Box component="form" onSubmit={submitRequest} display="grid" gridTemplateColumns={{ xs: "1fr", md: "1fr 1fr auto" }} gap={2}>
                   <TextField label="Ваше имя" value={name} onChange={(event) => setName(event.target.value)} required />
-                  <TextField label="Телефон" value={phone} onChange={(event) => setPhone(event.target.value)} required />
+                  <TextField
+                    label="Телефон"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    required
+                    placeholder="+7 7XX XXX XX XX"
+                    error={showPhoneError}
+                    helperText={showPhoneError ? phoneHelperText : " "}
+                  />
                   <Button type="submit" variant="contained" disabled={!canSubmit || submitting} sx={{ minHeight: 56 }}>
                     {submitting ? <CircularProgress size={22} color="inherit" /> : "Отправить"}
                   </Button>
@@ -1610,21 +1641,27 @@ function LeadQuiz() {
   };
 
   const progress = (step / 5) * 100;
+  const phoneIsValid = isValidPhone(answers.phone);
+  const showPhoneError = answers.phone.trim().length > 0 && !phoneIsValid;
   const canContinue =
     (step === 1 && answers.businessType) ||
     (step === 2 && answers.employees) ||
     (step === 3 && answers.services.length > 0) ||
     (step === 4 && answers.name) ||
-    (step === 5 && answers.phone);
+    (step === 5 && phoneIsValid);
 
   const submitQuiz = async () => {
+    if (!phoneIsValid) {
+      setError(phoneHelperText);
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
       await api.post("/leads", {
         source: "landing_quiz",
         name: answers.name,
-        phone: answers.phone,
+        phone: normalizePhoneDigits(answers.phone),
         businessType: answers.businessType,
         employees: answers.employees,
         services: answers.services
@@ -1731,6 +1768,8 @@ function LeadQuiz() {
                     placeholder="+7 (___) ___-__-__"
                     value={answers.phone}
                     onChange={(event) => setAnswers((current) => ({ ...current, phone: event.target.value }))}
+                    error={showPhoneError}
+                    helperText={showPhoneError ? phoneHelperText : " "}
                     fullWidth
                   />
                 </Stack>
@@ -1813,16 +1852,22 @@ export function LandingPage() {
     phone: "",
     message: ""
   });
+  const contactPhoneIsValid = isValidPhone(contactForm.phone);
+  const showContactPhoneError = contactForm.phone.trim().length > 0 && !contactPhoneIsValid;
 
   const handleContact = async (event: FormEvent) => {
     event.preventDefault();
+    if (!contactPhoneIsValid) {
+      setContactError(phoneHelperText);
+      return;
+    }
     setContactSubmitting(true);
     setContactError("");
     try {
       await api.post("/leads", {
         source: "landing_contact",
         name: contactForm.name,
-        phone: contactForm.phone,
+        phone: normalizePhoneDigits(contactForm.phone),
         message: contactForm.message
       });
       setContactSubmitted(true);
@@ -2298,6 +2343,8 @@ export function LandingPage() {
                       placeholder="+7 (___) ___-__-__"
                       value={contactForm.phone}
                       onChange={(event) => setContactForm((current) => ({ ...current, phone: event.target.value }))}
+                      error={showContactPhoneError}
+                      helperText={showContactPhoneError ? phoneHelperText : " "}
                       required
                       fullWidth
                     />
@@ -2310,7 +2357,7 @@ export function LandingPage() {
                       minRows={4}
                       fullWidth
                     />
-                    <Button type="submit" variant="contained" size="large" disabled={contactSubmitting}>
+                    <Button type="submit" variant="contained" size="large" disabled={!contactPhoneIsValid || contactSubmitting}>
                       {contactSubmitting ? <CircularProgress size={22} color="inherit" /> : "Отправить заявку"}
                     </Button>
                     <Typography variant="body2" color="text.secondary" textAlign="center">
