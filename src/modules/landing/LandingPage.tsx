@@ -1631,7 +1631,7 @@ function LeadQuiz() {
 
   if (submitted) {
     return (
-      <Box id="quiz" component="section" sx={{ py: { xs: 8, md: 10 }, background: "linear-gradient(135deg, #2563EB 0%, #172554 100%)" }}>
+      <Box id="quiz" component="section" sx={{ py: { xs: 8, md: 10 }, background: "var(--grad-brand)" }}>
         <Container maxWidth="md">
           <Card sx={{ textAlign: "center" }}>
             <CardContent sx={{ p: { xs: 4, md: 6 } }}>
@@ -1653,7 +1653,7 @@ function LeadQuiz() {
   }
 
   return (
-    <Box id="quiz" component="section" sx={{ py: { xs: 8, md: 10 }, background: "linear-gradient(135deg, #2563EB 0%, #172554 100%)" }}>
+    <Box id="quiz" component="section" sx={{ py: { xs: 8, md: 10 }, background: "var(--grad-brand)" }}>
       <Container maxWidth="md">
         <SectionTitle
           title="Подберем решение для вашего бизнеса"

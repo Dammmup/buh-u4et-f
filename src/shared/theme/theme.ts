@@ -50,7 +50,7 @@ export const theme = createTheme({
           "--gold": "#BEA44F",
           "--graphite": "#363938",
           "--bg": "#f5f2ea",
-          "--grad-brand": "linear-gradient(135deg, #484c4a 0%, #2b2d2c 100%)",
+          "--grad-brand": "linear-gradient(135deg, #0263b0 0%, #00152b 100%)",
           "--grad-gold": "linear-gradient(135deg, #BEA44F 0%, #D4AF37 100%)",
           "--grad-brand-soft": "linear-gradient(135deg, #d2c499 0%, #a3946a 100%)"
         },
