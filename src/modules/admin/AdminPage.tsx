@@ -294,8 +294,8 @@ export function AdminPage() {
     }
   };
 
-  const totalRevenue = orders.reduce((sum, order) => sum + order.calculation.total, 0);
-  const activeServices = services.filter((service) => service.isActive).length;
+  const totalRevenue = orders.filter(Boolean).reduce((sum, order) => sum + order.calculation.total, 0);
+  const activeServices = services.filter(Boolean).filter((service) => service.isActive).length;
 
   return (
     <Stack spacing={3}>
@@ -474,7 +474,7 @@ export function AdminPage() {
                 </Button>
               </Stack>
 
-              {services.map((service) => (
+              {services.filter(Boolean).map((service) => (
                 <ServiceEditor
                   key={service._id}
                   service={service}
@@ -562,7 +562,7 @@ function ServiceEditor({ service, saving, onPatch, onSave, onDelete }: ServiceEd
   const patchParameter = (index: number, updater: (parameter: ServiceParameter) => ServiceParameter) => {
     onPatch((current) => ({
       ...current,
-      parameters: current.parameters.map((parameter, parameterIndex) =>
+      parameters: (Array.isArray(current.parameters) ? current.parameters : []).map((parameter, parameterIndex) =>
         parameterIndex === index ? updater(parameter) : parameter
       )
     }));
@@ -572,13 +572,13 @@ function ServiceEditor({ service, saving, onPatch, onSave, onDelete }: ServiceEd
     onPatch((current) => ({
       ...current,
       pricing: {
-        ...current.pricing,
-        rules: current.pricing.rules.map((rule, ruleIndex) => (ruleIndex === index ? updater(rule) : rule))
+        ...(current.pricing ?? { currency: "KZT", formula: "rules_sum", basePrice: 0, rules: [] }),
+        rules: (Array.isArray(current.pricing?.rules) ? current.pricing.rules : []).map((rule, ruleIndex) => (ruleIndex === index ? updater(rule) : rule))
       }
     }));
   };
 
-  const firstParameterKey = service.parameters[0]?.key ?? "";
+  const firstParameterKey = (Array.isArray(service.parameters) ? service.parameters.filter(Boolean)[0]?.key : undefined) ?? "";
 
   return (
     <Accordion disableGutters elevation={0} sx={{ border: "1px solid", borderColor: service.isActive ? "divider" : "warning.light", "&:before": { display: "none" } }}>
@@ -593,7 +593,7 @@ function ServiceEditor({ service, saving, onPatch, onSave, onDelete }: ServiceEd
               {service.category} · {service.slug}
             </Typography>
           </Stack>
-          <Chip label={`от ${formatMoney(service.pricing.basePrice)}`} color="secondary" sx={{ alignSelf: "center" }} />
+          <Chip label={`от ${formatMoney(service.pricing?.basePrice ?? 0)}`} color="secondary" sx={{ alignSelf: "center" }} />
         </Stack>
       </AccordionSummary>
       <AccordionDetails>
@@ -641,7 +641,7 @@ function ServiceEditor({ service, saving, onPatch, onSave, onDelete }: ServiceEd
                 onClick={() =>
                   onPatch((current) => ({
                     ...current,
-                    parameters: [...current.parameters, newParameter(current.parameters.length)]
+                    parameters: [...(Array.isArray(current.parameters) ? current.parameters : []), newParameter((Array.isArray(current.parameters) ? current.parameters : []).length)]
                   }))
                 }
               >
@@ -649,7 +649,7 @@ function ServiceEditor({ service, saving, onPatch, onSave, onDelete }: ServiceEd
               </Button>
             </Stack>
 
-            {service.parameters.map((parameter, index) => (
+            {(Array.isArray(service.parameters) ? service.parameters : []).filter(Boolean).map((parameter, index) => (
               <Paper key={`${parameter.key}-${index}`} elevation={0} sx={{ p: 2, bgcolor: "background.default" }}>
                 <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(4, 1fr)" }} gap={2}>
                   <TextField label="Key" value={parameter.key} onChange={(event) => patchParameter(index, (item) => ({ ...item, key: event.target.value }))} />
@@ -682,7 +682,7 @@ function ServiceEditor({ service, saving, onPatch, onSave, onDelete }: ServiceEd
                         onClick={() =>
                           onPatch((current) => ({
                             ...current,
-                            parameters: current.parameters.filter((_item, itemIndex) => itemIndex !== index)
+                            parameters: (Array.isArray(current.parameters) ? current.parameters : []).filter((_item, itemIndex) => itemIndex !== index)
                           }))
                         }
                       >
@@ -699,7 +699,7 @@ function ServiceEditor({ service, saving, onPatch, onSave, onDelete }: ServiceEd
                   {parameter.inputType === "select" && (
                     <TextField
                       label="Options"
-                      value={(parameter.options ?? []).join(", ")}
+                      value={(Array.isArray(parameter.options) ? parameter.options : []).join(", ")}
                       onChange={(event) =>
                         patchParameter(index, (item) => ({
                           ...item,
@@ -720,37 +720,37 @@ function ServiceEditor({ service, saving, onPatch, onSave, onDelete }: ServiceEd
             <TextField
               label="Base price"
               type="number"
-              value={service.pricing.basePrice}
+              value={service.pricing?.basePrice ?? 0}
               onChange={(event) =>
                 onPatch((current) => ({
                   ...current,
-                  pricing: { ...current.pricing, basePrice: Number(event.target.value) }
+                  pricing: { ...(current.pricing ?? { currency: "KZT", formula: "rules_sum", basePrice: 0, rules: [] }), basePrice: Number(event.target.value) }
                 }))
               }
             />
             <TextField
               label="Minimum price"
               type="number"
-              value={service.pricing.minimumPrice ?? ""}
+              value={service.pricing?.minimumPrice ?? ""}
               onChange={(event) =>
                 onPatch((current) => ({
                   ...current,
-                  pricing: { ...current.pricing, minimumPrice: optionalNumber(event.target.value) }
+                  pricing: { ...(current.pricing ?? { currency: "KZT", formula: "rules_sum", basePrice: 0, rules: [] }), minimumPrice: optionalNumber(event.target.value) }
                 }))
               }
             />
             <TextField
               label="Rounding"
               select
-              value={service.pricing.rounding?.mode ?? "none"}
+              value={service.pricing?.rounding?.mode ?? "none"}
               onChange={(event) =>
                 onPatch((current) => ({
                   ...current,
                   pricing: {
-                    ...current.pricing,
+                    ...(current.pricing ?? { currency: "KZT", formula: "rules_sum", basePrice: 0, rules: [] }),
                     rounding: {
                       mode: event.target.value as RoundingMode,
-                      precision: current.pricing.rounding?.precision ?? 1
+                      precision: current.pricing?.rounding?.precision ?? 1
                     }
                   }
                 }))
@@ -765,14 +765,14 @@ function ServiceEditor({ service, saving, onPatch, onSave, onDelete }: ServiceEd
             <TextField
               label="Precision"
               type="number"
-              value={service.pricing.rounding?.precision ?? 1}
+              value={service.pricing?.rounding?.precision ?? 1}
               onChange={(event) =>
                 onPatch((current) => ({
                   ...current,
                   pricing: {
-                    ...current.pricing,
+                    ...(current.pricing ?? { currency: "KZT", formula: "rules_sum", basePrice: 0, rules: [] }),
                     rounding: {
-                      mode: current.pricing.rounding?.mode ?? "none",
+                      mode: current.pricing?.rounding?.mode ?? "none",
                       precision: Number(event.target.value)
                     }
                   }
@@ -792,8 +792,11 @@ function ServiceEditor({ service, saving, onPatch, onSave, onDelete }: ServiceEd
                   onPatch((current) => ({
                     ...current,
                     pricing: {
-                      ...current.pricing,
-                      rules: [...current.pricing.rules, newRule(firstParameterKey, current.pricing.rules.length)]
+                      ...(current.pricing ?? { currency: "KZT", formula: "rules_sum", basePrice: 0, rules: [] }),
+                      rules: [
+                        ...(Array.isArray(current.pricing?.rules) ? current.pricing.rules : []),
+                        newRule(firstParameterKey, (Array.isArray(current.pricing?.rules) ? current.pricing.rules : []).length)
+                      ]
                     }
                   }))
                 }
@@ -802,18 +805,18 @@ function ServiceEditor({ service, saving, onPatch, onSave, onDelete }: ServiceEd
               </Button>
             </Stack>
 
-            {service.pricing.rules.map((rule, index) => (
+            {(Array.isArray(service.pricing?.rules) ? service.pricing.rules : []).filter(Boolean).map((rule, index) => (
               <RuleEditor
                 key={`${rule.key}-${index}`}
                 rule={rule}
-                parameters={service.parameters}
+                parameters={(Array.isArray(service.parameters) ? service.parameters : []).filter(Boolean)}
                 onPatch={(updater) => patchRule(index, updater)}
                 onDelete={() =>
                   onPatch((current) => ({
                     ...current,
                     pricing: {
-                      ...current.pricing,
-                      rules: current.pricing.rules.filter((_item, itemIndex) => itemIndex !== index)
+                      ...(current.pricing ?? { currency: "KZT", formula: "rules_sum", basePrice: 0, rules: [] }),
+                      rules: (Array.isArray(current.pricing?.rules) ? current.pricing.rules : []).filter((_item, itemIndex) => itemIndex !== index)
                     }
                   }))
                 }
@@ -915,14 +918,14 @@ function RuleEditor({ rule, parameters, onPatch, onDelete }: RuleEditorProps) {
                 onClick={() =>
                   onPatch((current) => ({
                     ...current,
-                    tiers: [...(current.tiers ?? []), { from: 0, unitPrice: 0 }]
+                    tiers: [...(Array.isArray(current.tiers) ? current.tiers : []), { from: 0, unitPrice: 0 }]
                   }))
                 }
               >
                 Добавить
               </Button>
             </Stack>
-            {(rule.tiers ?? []).map((tier, index) => (
+            {(Array.isArray(rule.tiers) ? rule.tiers : []).filter(Boolean).map((tier, index) => (
               <Box key={`${tier.from}-${index}`} display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(4, 1fr) auto" }} gap={1.5}>
                 <TextField label="From" type="number" value={tier.from} onChange={(event) => patchTier(index, (item) => ({ ...item, from: Number(event.target.value) }))} />
                 <TextField label="To" type="number" value={tier.to ?? ""} onChange={(event) => patchTier(index, (item) => ({ ...item, to: optionalNumber(event.target.value) }))} />
@@ -933,7 +936,7 @@ function RuleEditor({ rule, parameters, onPatch, onDelete }: RuleEditorProps) {
                   onClick={() =>
                     onPatch((current) => ({
                       ...current,
-                      tiers: (current.tiers ?? []).filter((_item, itemIndex) => itemIndex !== index)
+                      tiers: (Array.isArray(current.tiers) ? current.tiers : []).filter((_item, itemIndex) => itemIndex !== index)
                     }))
                   }
                 >
@@ -955,7 +958,7 @@ function RuleEditor({ rule, parameters, onPatch, onDelete }: RuleEditorProps) {
                 onPatch((current) => ({
                   ...current,
                   conditions: [
-                    ...(current.conditions ?? []),
+                    ...(Array.isArray(current.conditions) ? current.conditions : []),
                     { parameterKey: parameters[0]?.key ?? "", operator: "gte", value: 1 }
                   ]
                 }))
@@ -964,7 +967,7 @@ function RuleEditor({ rule, parameters, onPatch, onDelete }: RuleEditorProps) {
               Добавить
             </Button>
           </Stack>
-          {(rule.conditions ?? []).map((condition, index) => (
+          {(Array.isArray(rule.conditions) ? rule.conditions : []).filter(Boolean).map((condition, index) => (
             <Box key={`${condition.parameterKey}-${index}`} display="grid" gridTemplateColumns={{ xs: "1fr", md: "1fr 1fr 1fr auto" }} gap={1.5}>
               <TextField
                 label="Parameter"
@@ -1010,7 +1013,7 @@ function RuleEditor({ rule, parameters, onPatch, onDelete }: RuleEditorProps) {
                 onClick={() =>
                   onPatch((current) => ({
                     ...current,
-                    conditions: (current.conditions ?? []).filter((_item, itemIndex) => itemIndex !== index)
+                    conditions: (Array.isArray(current.conditions) ? current.conditions : []).filter((_item, itemIndex) => itemIndex !== index)
                   }))
                 }
               >

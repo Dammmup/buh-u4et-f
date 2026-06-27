@@ -780,19 +780,23 @@ interface ServiceCostCalculatorProps {
 }
 
 function ServiceCostCalculator({ dbServices, loading }: ServiceCostCalculatorProps) {
+  const calculatorSlugs = [
+    "forma-328-dynamic",
+    "hr-payroll-once",
+    "forma-300-esf",
+    "forma-200-employees",
+    "document-issue",
+    "registration-ip",
+    "registration-too",
+    "tax-reporting-suspension-ip",
+    "tax-accounting-policy"
+  ];
+
   const displayCalculatorOptions = dbServices.length > 0
-    ? dbServices
-        .filter((s) => [
-          "forma-328-dynamic",
-          "hr-payroll-once",
-          "forma-300-esf",
-          "document-issue",
-          "registration-ip",
-          "registration-too",
-          "tax-reporting-suspension-ip",
-          "tax-accounting-policy"
-        ].includes(s.slug))
-        .map((s) => {
+    ? calculatorSlugs
+        .map((slug) => dbServices.find((s) => s.slug === slug))
+        .filter(Boolean)
+        .map((s: any) => {
           const numParam = s.parameters?.find((p: any) => p.inputType === "number");
           const rule = s.pricing?.rules?.find((r: any) => r.parameterKey === numParam?.key);
           
