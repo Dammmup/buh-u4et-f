@@ -54,7 +54,7 @@ import {
   ToggleButtonGroup,
   Typography
 } from "@mui/material";
-import { FormEvent, ReactNode, useState } from "react";
+import { FormEvent, ReactNode, useState, useEffect } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { api } from "../../shared/api/client";
 
@@ -92,16 +92,7 @@ type TariffActivity = "service" | "trade" | "production";
 type TaxMode = "ip_usn" | "ip_our" | "too_usn" | "too_our" | "reverse" | "unified";
 type CalculationDirection = "direct" | "reverse";
 type Residency = "citizen" | "foreigner";
-type ServiceCalculatorKey =
-  | "form328"
-  | "salary"
-  | "form300"
-  | "esf"
-  | "snt"
-  | "ipRegistration"
-  | "tooRegistration"
-  | "ipSuspension"
-  | "taxPolicy";
+type ServiceCalculatorKey = string;
 
 const tariffOptions = {
   forms: [
@@ -183,100 +174,7 @@ const taxLimits = {
   monthlyProgressivePitThreshold: (taxConstants.mrp * 8500) / 12
 };
 
-const serviceCalculatorOptions: {
-  key: ServiceCalculatorKey;
-  title: string;
-  description: string;
-  basePrice: number;
-  parameterLabel?: string;
-  parameterName?: string;
-  unitPrice?: number;
-  includedUnits?: number;
-  unitStep?: number;
-  unitSuffix?: string;
-}[] = [
-  {
-    key: "form328",
-    title: "Форма 328",
-    description: "Импорт и экспорт по Евразийскому союзу, до 10 строк включительно",
-    basePrice: 20000,
-    parameterLabel: "Дополнительные строки",
-    parameterName: "extraRows",
-    unitPrice: 1000,
-    includedUnits: 10,
-    unitSuffix: "стр."
-  },
-  {
-    key: "salary",
-    title: "Расчет зарплаты",
-    description: "Расчет по системе оплаты труда заказчика",
-    basePrice: 5000,
-    parameterLabel: "Количество сотрудников",
-    parameterName: "employeesCount",
-    unitPrice: 5000,
-    includedUnits: 1,
-    unitSuffix: "сотр."
-  },
-  {
-    key: "form300",
-    title: "Форма 300",
-    description: "Отчетность по данным портала ИС ЭСФ",
-    basePrice: 30000,
-    parameterLabel: "Количество работников",
-    parameterName: "employeesCount",
-    unitPrice: 1500,
-    includedUnits: 0,
-    unitSuffix: "сотр."
-  },
-  {
-    key: "esf",
-    title: "ЭСФ",
-    description: "Формирование электронных счетов-фактур",
-    basePrice: 5000,
-    parameterLabel: "Количество позиций",
-    parameterName: "itemsCount",
-    unitPrice: 3000,
-    includedUnits: 5,
-    unitStep: 5,
-    unitSuffix: "поз."
-  },
-  {
-    key: "snt",
-    title: "СНТ",
-    description: "Формирование сопроводительных накладных",
-    basePrice: 5000,
-    parameterLabel: "Количество позиций",
-    parameterName: "itemsCount",
-    unitPrice: 3000,
-    includedUnits: 5,
-    unitStep: 5,
-    unitSuffix: "поз."
-  },
-  {
-    key: "ipRegistration",
-    title: "Регистрация ИП",
-    description: "Регистрация ИП и первичная консультация",
-    basePrice: 24000
-  },
-  {
-    key: "tooRegistration",
-    title: "Регистрация ТОО",
-    description: "Подготовка и подача документов",
-    basePrice: 84000
-  },
-  {
-    key: "ipSuspension",
-    title: "Заявление на приостановление",
-    description: "Подготовка заявления на приостановление сдачи отчетности",
-    basePrice: 12000
-  },
-  {
-    key: "taxPolicy",
-    title: "Налоговая учетная политика",
-    description: "Разработка налоговой учетной политики",
-    basePrice: 25000
-  }
-];
+const serviceCalculatorOptions: any[] = [];
 
 const serviceCards = [
   {
@@ -655,12 +553,12 @@ function TariffCalculator() {
 
   return (
     <Card sx={{ mb: 4, overflow: "hidden", borderColor: "primary.main" }}>
-      <Box sx={{ p: { xs: 3, md: 4 }, background: "linear-gradient(135deg, #1E3A8A 0%, #172554 100%)", color: "white" }}>
+      <Box sx={{ p: { xs: 3, md: 4 }, background: "var(--grad-brand)", color: "white" }}>
         <Stack spacing={1}>
           <Typography variant="h4" color="white">
             Подбор тарифа
           </Typography>
-          <Typography sx={{ color: "#DBEAFE", maxWidth: 780 }}>
+          <Typography sx={{ color: "var(--gold)", maxWidth: 780 }}>
             Выберите форму собственности, режим налогообложения и вид деятельности. Базовая стоимость включает до 3 штатных работников.
           </Typography>
         </Stack>
@@ -876,8 +774,47 @@ function FrequentServicesSection() {
   );
 }
 
-function ServiceCostCalculator() {
-  const [selectedKey, setSelectedKey] = useState<ServiceCalculatorKey>("form328");
+interface ServiceCostCalculatorProps {
+  dbServices: any[];
+  loading: boolean;
+}
+
+function ServiceCostCalculator({ dbServices, loading }: ServiceCostCalculatorProps) {
+  const displayCalculatorOptions = dbServices.length > 0
+    ? dbServices
+        .filter((s) => [
+          "forma-328-dynamic",
+          "hr-payroll-once",
+          "forma-300-esf",
+          "document-issue",
+          "registration-ip",
+          "registration-too",
+          "tax-reporting-suspension-ip",
+          "tax-accounting-policy"
+        ].includes(s.slug))
+        .map((s) => {
+          const numParam = s.parameters?.find((p: any) => p.inputType === "number");
+          const rule = s.pricing?.rules?.find((r: any) => r.parameterKey === numParam?.key);
+          
+          let title = s.name;
+          if (s.slug === "document-issue") title = "ЭСФ / СНТ / АВР";
+          
+          return {
+            key: s.slug,
+            title: title,
+            description: s.description,
+            basePrice: s.pricing?.basePrice ?? 0,
+            parameterLabel: numParam?.label,
+            parameterName: numParam?.key,
+            unitPrice: rule?.unitPrice ?? rule?.amount ?? 0,
+            includedUnits: rule?.includedQuantity ?? 0,
+            unitStep: rule?.blockSize ?? 1,
+            unitSuffix: numParam?.unit ?? ""
+          };
+        })
+    : [];
+
+  const [selectedKey, setSelectedKey] = useState<string>("");
   const [quantity, setQuantity] = useState("0");
   const [urgent, setUrgent] = useState(false);
   const [withDigitalSubmission, setWithDigitalSubmission] = useState(true);
@@ -887,8 +824,22 @@ function ServiceCostCalculator() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (displayCalculatorOptions.length > 0 && !selectedKey) {
+      setSelectedKey(displayCalculatorOptions[0].key);
+    }
+  }, [displayCalculatorOptions, selectedKey]);
+
+  if (loading || displayCalculatorOptions.length === 0 || !selectedKey) {
+    return (
+      <Box id="tax-calculator" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "background.default", display: "grid", placeItems: "center" }}>
+        <CircularProgress color="secondary" />
+      </Box>
+    );
+  }
+
   const selectedService =
-    serviceCalculatorOptions.find((service) => service.key === selectedKey) ?? serviceCalculatorOptions[0];
+    displayCalculatorOptions.find((service) => service.key === selectedKey) ?? displayCalculatorOptions[0];
   const rawQuantity = selectedService.parameterName ? parseAmount(quantity) : 0;
   const chargeableUnits = selectedService.parameterName
     ? Math.max(0, rawQuantity - (selectedService.includedUnits ?? 0))
@@ -970,7 +921,7 @@ function ServiceCostCalculator() {
               <ToggleButtonGroup
                 exclusive
                 value={selectedKey}
-                onChange={(_event, nextValue: ServiceCalculatorKey | null) => {
+                onChange={(_event, nextValue: string | null) => {
                   if (nextValue) {
                     setSelectedKey(nextValue);
                     setQuantity("0");
@@ -989,7 +940,7 @@ function ServiceCostCalculator() {
                   }
                 }}
               >
-                {serviceCalculatorOptions.map((service) => (
+                {displayCalculatorOptions.map((service) => (
                   <ToggleButton key={service.key} value={service.key}>
                     {service.title}
                   </ToggleButton>
@@ -1842,6 +1793,50 @@ function QuizOptions({
   );
 }
 
+function getCategoryIcon(category: string) {
+  switch (category) {
+    case "Бухгалтерское сопровождение":
+      return <ArticleIcon />;
+    case "Первичная документация":
+      return <ReceiptLongIcon />;
+    case "Проверка контрагентов":
+      return <SecurityIcon />;
+    case "Налоговая отчетность":
+      return <CalculateIcon />;
+    case "Электронный документооборот":
+      return <ReceiptLongIcon />;
+    case "Лицензирование":
+      return <BusinessIcon />;
+    case "Регистрация и изменения":
+      return <CalculateIcon />;
+    case "Кадровый учет":
+      return <GroupsIcon />;
+    case "Статистическая отчетность":
+      return <BarChartIcon />;
+    case "Кассовое оборудование":
+      return <CalculateIcon />;
+    default:
+      return <ArticleIcon />;
+  }
+}
+
+function formatServicePrice(service: any) {
+  const basePrice = service.pricing?.basePrice ?? 0;
+  const hasParams = service.parameters && service.parameters.length > 0;
+  const hasRules = service.pricing?.rules && service.pricing.rules.length > 0;
+  
+  const formatted = new Intl.NumberFormat("ru-KZ", {
+    style: "currency",
+    currency: "KZT",
+    maximumFractionDigits: 0
+  }).format(basePrice);
+
+  if (hasParams || hasRules || service.slug.includes("once") || service.slug.includes("import")) {
+    return `от ${formatted}`;
+  }
+  return formatted;
+}
+
 export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [contactSubmitted, setContactSubmitted] = useState(false);
@@ -1854,6 +1849,24 @@ export function LandingPage() {
   });
   const contactPhoneIsValid = isValidPhone(contactForm.phone);
   const showContactPhoneError = contactForm.phone.trim().length > 0 && !contactPhoneIsValid;
+
+  const [dbServices, setDbServices] = useState<any[]>([]);
+  const [dbServicesLoading, setDbServicesLoading] = useState(true);
+
+  useEffect(() => {
+    api.get("/services")
+      .then((response) => {
+        if (response.data?.services && response.data.services.length > 0) {
+          setDbServices(response.data.services);
+        }
+      })
+      .catch((error) => {
+        console.error("Ошибка загрузки услуг с бэкенда, используем локальный список:", error);
+      })
+      .finally(() => {
+        setDbServicesLoading(false);
+      });
+  }, []);
 
   const handleContact = async (event: FormEvent) => {
     event.preventDefault();
@@ -1884,6 +1897,27 @@ export function LandingPage() {
     scrollToSection(target);
     setMobileMenuOpen(false);
   };
+
+  const displayPriceList = dbServices.length > 0
+    ? Object.keys(
+        dbServices.reduce((acc: any, service: any) => {
+          const cat = service.category || "Другие услуги";
+          if (!acc[cat]) acc[cat] = [];
+          acc[cat].push(service);
+          return acc;
+        }, {})
+      ).map((catName) => {
+        const items = dbServices.filter((s) => s.category === catName);
+        return {
+          title: catName,
+          icon: getCategoryIcon(catName),
+          items: items.map((s) => ({
+            name: s.name,
+            price: formatServicePrice(s)
+          }))
+        };
+      })
+    : priceList;
 
   return (
     <Box id="top" bgcolor="white">
@@ -2068,11 +2102,11 @@ export function LandingPage() {
 
       <SeasonalServicesSection />
 
-      <ServiceCostCalculator />
+      <ServiceCostCalculator dbServices={dbServices} loading={dbServicesLoading} />
 
       <FrequentServicesSection />
 
-      <Box component="section" sx={{ py: { xs: 8, md: 10 }, background: "linear-gradient(135deg, #1E3A8A 0%, #172554 100%)" }}>
+      <Box component="section" sx={{ py: { xs: 8, md: 10 }, background: "var(--grad-brand)" }}>
         <Container maxWidth="xl">
           <SectionTitle title="Почему выбирают нас" subtitle="Цифры, которые говорят о надежности сервиса" light />
           <Box display="grid" gridTemplateColumns={{ xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={3}>
@@ -2081,8 +2115,8 @@ export function LandingPage() {
                 <Stack spacing={2} alignItems="center">
                   <Box sx={{ width: 64, height: 64, borderRadius: 3, display: "grid", placeItems: "center", bgcolor: "rgba(255,255,255,0.18)" }}>{stat.icon}</Box>
                   <Typography variant="h3">{stat.value}</Typography>
-                  <Typography sx={{ color: "#DBEAFE", fontSize: 20 }}>{stat.label}</Typography>
-                  <Typography variant="body2" sx={{ color: "#BFDBFE" }}>
+                  <Typography sx={{ color: "var(--gold)", fontSize: 20 }}>{stat.label}</Typography>
+                  <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)" }}>
                     {stat.description}
                   </Typography>
                 </Stack>
@@ -2096,9 +2130,9 @@ export function LandingPage() {
         <Container maxWidth="xl">
           <SectionTitle title="Прайс-лист услуг" subtitle="Прозрачные цены на все виды бухгалтерских услуг" />
           <Stack spacing={3}>
-            {priceList.map((category) => (
-              <Card key={category.title} sx={{ overflow: "hidden", boxShadow: "0 10px 15px -3px rgba(17, 24, 39, 0.1)", "&:hover": { borderColor: "primary.main" } }}>
-                <Box sx={{ p: 3, background: "linear-gradient(90deg, #1E3A8A 0%, #1E40AF 100%)", color: "white" }}>
+            {displayPriceList.map((category) => (
+              <Card key={category.title} sx={{ overflow: "hidden", boxShadow: "0 10px 15px -3px rgba(54, 57, 56, 0.1)", "&:hover": { borderColor: "primary.main" } }}>
+                <Box sx={{ p: 3, background: "var(--grad-brand)", color: "white" }}>
                   <Stack direction="row" spacing={2} alignItems="center">
                     <Box sx={{ width: 48, height: 48, borderRadius: 3, bgcolor: "rgba(255,255,255,0.18)", display: "grid", placeItems: "center" }}>
                       {category.icon}
@@ -2140,9 +2174,9 @@ export function LandingPage() {
               </Card>
             ))}
           </Stack>
-          <Paper elevation={0} sx={{ mt: 5, p: { xs: 4, md: 6 }, textAlign: "center", color: "white", background: "linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%)" }}>
+          <Paper elevation={0} sx={{ mt: 5, p: { xs: 4, md: 6 }, textAlign: "center", color: "white", background: "var(--grad-brand)" }}>
             <Typography variant="h4">Нужна консультация по ценам?</Typography>
-            <Typography sx={{ color: "#DBEAFE", mt: 2, mb: 3 }}>
+            <Typography sx={{ color: "var(--gold)", mt: 2, mb: 3 }}>
               Свяжитесь с нами, и мы подберем оптимальное решение для вашего бизнеса.
             </Typography>
             <Button color="secondary" variant="contained" size="large" onClick={() => scrollToSection("contact")}>
@@ -2295,7 +2329,7 @@ export function LandingPage() {
         <Container maxWidth="xl">
           <SectionTitle title="Свяжитесь с нами" subtitle="Оставьте заявку и получите бесплатную консультацию" />
           <Box display="grid" gridTemplateColumns={{ xs: "1fr", lg: "1fr 1fr" }} gap={4}>
-            <Paper elevation={0} sx={{ p: { xs: 4, md: 6 }, color: "white", background: "linear-gradient(135deg, #1E3A8A 0%, #172554 100%)" }}>
+            <Paper elevation={0} sx={{ p: { xs: 4, md: 6 }, color: "white", background: "var(--grad-brand)" }}>
               <Stack spacing={4}>
                 <Typography variant="h4">Готовы начать сотрудничество?</Typography>
                 {[
@@ -2308,12 +2342,12 @@ export function LandingPage() {
                     <Box sx={{ mt: 0.3 }}>{icon as ReactNode}</Box>
                     <Box>
                       <Typography fontWeight={800}>{label}</Typography>
-                      <Typography sx={{ color: "#DBEAFE" }}>{value}</Typography>
+                      <Typography sx={{ color: "var(--gold)" }}>{value}</Typography>
                     </Box>
                   </Stack>
                 ))}
                 <Divider sx={{ borderColor: "rgba(255,255,255,0.2)" }} />
-                <Typography sx={{ color: "#DBEAFE" }}>Пн-Пт: 9:00 - 18:00</Typography>
+                <Typography sx={{ color: "var(--gold)" }}>Пн-Пт: 9:00 - 18:00</Typography>
               </Stack>
             </Paper>
 
