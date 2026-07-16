@@ -26,7 +26,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import type { CalculationBreakdownItem, OrderCalculation } from "../../entities/order/model";
 import type { AccountingService, ServiceParameter } from "../../entities/service/model";
-import { api, formatMoney, getApiErrorStatus } from "../../shared/api/client";
+import { api, formatMoney, getApiErrorMessage, getApiErrorStatus } from "../../shared/api/client";
 import { PageHeader } from "../../shared/components/PageHeader";
 
 type CalculatorParams = Record<string, number | string>;
@@ -50,12 +50,21 @@ function parseParamValue(parameter: ServiceParameter, value: string): number | s
   return Number(value);
 }
 
+function paramsSignature(params: CalculatorParams) {
+  return JSON.stringify(
+    Object.keys(params)
+      .sort()
+      .map((key) => [key, params[key]])
+  );
+}
+
 export function ServiceCalculatorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [service, setService] = useState<AccountingService | null>(null);
   const [params, setParams] = useState<CalculatorParams>({});
   const [calculation, setCalculation] = useState<OrderCalculation | null>(null);
+  const [calculatedParamsSignature, setCalculatedParamsSignature] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [message, setMessage] = useState("");
   const [needsSubscription, setNeedsSubscription] = useState(false);
@@ -69,9 +78,12 @@ export function ServiceCalculatorPage() {
       .get<{ service: AccountingService }>(`/services/${id}`)
       .then((response) => {
         const nextService = response.data.service;
+        const initialParams = makeInitialParams(nextService);
         setService(nextService);
-        setParams(makeInitialParams(nextService));
+        setParams(initialParams);
         setCalculation(null);
+        setCalculatedParamsSignature(null);
+        setComment("");
       })
       .catch(() => setMessage("Услуга не найдена или временно недоступна."))
       .finally(() => setLoading(false));
@@ -94,6 +106,21 @@ export function ServiceCalculatorPage() {
     [service]
   );
 
+  const hasParameters = (service?.parameters.length ?? 0) > 0;
+  const isCalculationCurrent =
+    !hasParameters ||
+    (calculation !== null && calculatedParamsSignature === paramsSignature(params));
+
+  const updateParam = (parameter: ServiceParameter, value: string) => {
+    setParams((current) => ({
+      ...current,
+      [parameter.key]: parseParamValue(parameter, value)
+    }));
+    setCalculation(null);
+    setCalculatedParamsSignature(null);
+    setMessage("");
+  };
+
   const activateSubscription = async () => {
     setSubmitting(true);
     setMessage("");
@@ -101,31 +128,40 @@ export function ServiceCalculatorPage() {
       await api.post("/subscriptions", { plan: "starter", paymentReference: `web-starter-${Date.now()}` });
       setNeedsSubscription(false);
       setMessage("Подписка активирована. Можно продолжить оформление заказа.");
-    } catch {
-      setMessage("Не удалось подключить подписку.");
+    } catch (error) {
+      setMessage(getApiErrorMessage(error, "Не удалось подключить подписку."));
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const runCalculation = async (currentParams: CalculatorParams) => {
+    const response = await api.post<{ calculation: OrderCalculation; normalizedParams: CalculatorParams }>(
+      "/orders/calculate",
+      { serviceId: id, params: currentParams }
+    );
+    const nextParams = response.data.normalizedParams;
+    setCalculation(response.data.calculation);
+    setParams(nextParams);
+    setCalculatedParamsSignature(paramsSignature(nextParams));
+    setNeedsSubscription(false);
+    return { calculation: response.data.calculation, params: nextParams };
   };
 
   const calculate = async () => {
     setSubmitting(true);
     setMessage("");
     try {
-      const response = await api.post<{ calculation: OrderCalculation; normalizedParams: CalculatorParams }>(
-        "/orders/calculate",
-        { serviceId: id, params }
-      );
-      setCalculation(response.data.calculation);
-      setParams(response.data.normalizedParams);
-      setNeedsSubscription(false);
+      await runCalculation(params);
     } catch (error) {
+      setCalculation(null);
+      setCalculatedParamsSignature(null);
       if (getApiErrorStatus(error) === 402) {
         setNeedsSubscription(true);
       } else if (getApiErrorStatus(error) === 403) {
         setMessage("Ваш тариф не позволяет выполнить это действие или лимит на месяц исчерпан.");
       } else {
-        setMessage("Не удалось рассчитать услугу. Проверьте параметры.");
+        setMessage(getApiErrorMessage(error, "Не удалось рассчитать услугу. Проверьте параметры."));
       }
     } finally {
       setSubmitting(false);
@@ -137,7 +173,18 @@ export function ServiceCalculatorPage() {
     setSubmitting(true);
     setMessage("");
     try {
-      const response = await api.post<{ order: { _id: string } }>("/orders", { serviceId: id, params, comment });
+      let orderParams = params;
+
+      if (!isCalculationCurrent) {
+        const fresh = await runCalculation(params);
+        orderParams = fresh.params;
+      }
+
+      const response = await api.post<{ order: { _id: string } }>("/orders", {
+        serviceId: id,
+        params: orderParams,
+        comment
+      });
       setMessage("Заказ создан.");
       window.setTimeout(() => navigate("/orders", { state: { orderId: response.data.order._id } }), 450);
     } catch (error) {
@@ -146,7 +193,7 @@ export function ServiceCalculatorPage() {
       } else if (getApiErrorStatus(error) === 403) {
         setMessage("Ваш тариф не позволяет создать этот заказ или лимит на месяц исчерпан.");
       } else {
-        setMessage("Не удалось создать заказ.");
+        setMessage(getApiErrorMessage(error, "Не удалось создать заказ."));
       }
     } finally {
       setSubmitting(false);
@@ -207,7 +254,15 @@ export function ServiceCalculatorPage() {
       )}
 
       {message && !needsSubscription && (
-        <Alert severity={message.includes("Не удалось") ? "error" : "success"}>{message}</Alert>
+        <Alert severity={message.includes("Не удалось") || message.includes("must") ? "error" : "success"}>
+          {message}
+        </Alert>
+      )}
+
+      {hasParameters && !isCalculationCurrent && !needsSubscription && (
+        <Alert severity="info">
+          Параметры изменились. Нажмите «Рассчитать» или создайте заказ — итог будет пересчитан автоматически.
+        </Alert>
       )}
 
       <Box display="grid" gridTemplateColumns={{ xs: "1fr", lg: "minmax(0, 1fr) 420px" }} gap={3} alignItems="start">
@@ -236,15 +291,10 @@ export function ServiceCalculatorPage() {
                     inputProps={{
                       min: parameter.min,
                       max: parameter.max,
-                      step: parameter.step ?? (parameter.inputType === "number" ? 1 : undefined)
+                      step: parameter.step ?? (parameter.inputType === "number" ? "any" : undefined)
                     }}
                     helperText={parameter.helpText ?? (parameter.unit ? `Единица: ${parameter.unit}` : " ")}
-                    onChange={(event) =>
-                      setParams((current) => ({
-                        ...current,
-                        [parameter.key]: parseParamValue(parameter, event.target.value)
-                      }))
-                    }
+                    onChange={(event) => updateParam(parameter, event.target.value)}
                     required={parameter.required}
                     fullWidth
                   >
@@ -293,12 +343,25 @@ export function ServiceCalculatorPage() {
           <CardContent sx={{ p: { xs: 3, md: 4 } }}>
             <Stack spacing={2.5}>
               <Stack spacing={0.5}>
-                <Typography variant="body2" color="text.secondary">
-                  Итог
-                </Typography>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                  <Typography variant="body2" color="text.secondary">
+                    Итог
+                  </Typography>
+                  {!isCalculationCurrent && hasParameters && (
+                    <Chip size="small" color="warning" label="не актуален" />
+                  )}
+                  {isCalculationCurrent && calculation && (
+                    <Chip size="small" color="success" label="актуален" />
+                  )}
+                </Stack>
                 <Typography variant="h3" color="secondary.dark">
                   {formatMoney(total)}
                 </Typography>
+                {!isCalculationCurrent && hasParameters && (
+                  <Typography variant="body2" color="warning.main">
+                    Показана базовая оценка. После расчета появится точная сумма.
+                  </Typography>
+                )}
               </Stack>
 
               <Stack direction="row" spacing={1} flexWrap="wrap">
@@ -336,7 +399,7 @@ export function ServiceCalculatorPage() {
                 </TableBody>
               </Table>
 
-              {calculation?.domain && (
+              {calculation?.domain && isCalculationCurrent && (
                 <>
                   <Divider />
                   <Stack spacing={1.5}>

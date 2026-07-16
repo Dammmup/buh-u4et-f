@@ -221,11 +221,11 @@ export function OrdersPage() {
                       Параметры
                     </Typography>
                     <Paper elevation={0} sx={{ p: 2, bgcolor: "background.default" }}>
-                      {Object.keys(order.params).length === 0 ? (
+                      {Object.keys(order.params ?? {}).length === 0 ? (
                         <Typography color="text.secondary">Без дополнительных параметров</Typography>
                       ) : (
                         <Stack spacing={1}>
-                          {Object.entries(order.params).map(([key, value]) => (
+                          {Object.entries(order.params ?? {}).map(([key, value]) => (
                             <Stack key={key} direction="row" justifyContent="space-between" gap={2}>
                               <Typography color="text.secondary">{key}</Typography>
                               <Typography fontWeight={800}>{String(value)}</Typography>

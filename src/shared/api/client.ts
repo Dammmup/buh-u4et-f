@@ -16,7 +16,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("auth_token");
+      const url = String(error.config?.url ?? "");
+      const isAuthAttempt = url.includes("/auth/login") || url.includes("/auth/register");
+      if (!isAuthAttempt) {
+        localStorage.removeItem("auth_token");
+        window.dispatchEvent(new Event("auth:logout"));
+      }
     }
     return Promise.reject(error);
   }
@@ -39,4 +44,30 @@ export function formatDateTime(value: string | Date) {
 
 export function getApiErrorStatus(error: unknown) {
   return axios.isAxiosError(error) ? error.response?.status : undefined;
+}
+
+export function getApiErrorMessage(error: unknown, fallback: string) {
+  if (!axios.isAxiosError(error)) {
+    return fallback;
+  }
+
+  const payload = error.response?.data as
+    | { message?: string; details?: { formErrors?: string[]; fieldErrors?: Record<string, string[]> } }
+    | undefined;
+
+  if (payload?.message && payload.message !== "Validation failed") {
+    return payload.message;
+  }
+
+  const fieldErrors = payload?.details?.fieldErrors
+    ? Object.values(payload.details.fieldErrors).flat()
+    : [];
+  const formErrors = payload?.details?.formErrors ?? [];
+  const details = [...formErrors, ...fieldErrors].filter(Boolean);
+
+  if (details.length > 0) {
+    return details.join(". ");
+  }
+
+  return payload?.message || fallback;
 }

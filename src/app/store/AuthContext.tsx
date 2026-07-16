@@ -57,6 +57,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
       .finally(() => setReady(true));
   }, [logout]);
 
+  useEffect(() => {
+    const onLogout = () => {
+      localStorage.removeItem("auth_token");
+      setUser(null);
+    };
+    window.addEventListener("auth:logout", onLogout);
+    return () => window.removeEventListener("auth:logout", onLogout);
+  }, []);
+
   const login = useCallback(
     async (payload: Credentials) => {
       const response = await api.post<AuthResponse>("/auth/login", payload);

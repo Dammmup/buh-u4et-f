@@ -242,9 +242,15 @@ export function AdminPage() {
   };
 
   const updateStatus = async (orderId: string, status: OrderStatus) => {
-    const response = await api.patch<{ order: Order }>(`/orders/admin/${orderId}/status`, { status });
-    setOrders((current) => current.map((order) => (order._id === orderId ? response.data.order : order)));
-    setMessage("Статус заказа обновлен.");
+    setMessage("");
+    setError("");
+    try {
+      const response = await api.patch<{ order: Order }>(`/orders/admin/${orderId}/status`, { status });
+      setOrders((current) => current.map((order) => (order._id === orderId ? response.data.order : order)));
+      setMessage("Статус заказа обновлен.");
+    } catch {
+      setError("Не удалось обновить статус заказа.");
+    }
   };
 
   const recalculateOrder = async (orderId: string) => {
@@ -399,12 +405,15 @@ export function AdminPage() {
                                 Параметры заказа
                               </Typography>
                               <Stack spacing={1}>
-                                {Object.entries(order.params).map(([key, value]) => (
+                                {Object.entries(order.params ?? {}).map(([key, value]) => (
                                   <Stack key={key} direction="row" justifyContent="space-between" gap={2}>
                                     <Typography color="text.secondary">{key}</Typography>
                                     <Typography fontWeight={800}>{String(value)}</Typography>
                                   </Stack>
                                 ))}
+                                {Object.keys(order.params ?? {}).length === 0 && (
+                                  <Typography color="text.secondary">Без дополнительных параметров</Typography>
+                                )}
                               </Stack>
                             </Paper>
 
