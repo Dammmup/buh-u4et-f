@@ -29,6 +29,7 @@ export interface PlanLimits {
   uploadFilesPerMonth: number;
   uploadFilesPerOrder: number;
   maxFileSizeMb: number;
+  maxEmployees: number;
   allowedServiceSlugs: string[] | "*";
   allowedCategories: string[] | "*";
 }

@@ -1,4 +1,3 @@
-import AddCardIcon from "@mui/icons-material/AddCard";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import CalculateIcon from "@mui/icons-material/Calculate";
 import KeyboardBackspaceIcon from "@mui/icons-material/KeyboardBackspace";
@@ -121,20 +120,6 @@ export function ServiceCalculatorPage() {
     setMessage("");
   };
 
-  const activateSubscription = async () => {
-    setSubmitting(true);
-    setMessage("");
-    try {
-      await api.post("/subscriptions", { plan: "starter", paymentReference: `web-starter-${Date.now()}` });
-      setNeedsSubscription(false);
-      setMessage("Подписка активирована. Можно продолжить оформление заказа.");
-    } catch (error) {
-      setMessage(getApiErrorMessage(error, "Не удалось подключить подписку."));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const runCalculation = async (currentParams: CalculatorParams) => {
     const response = await api.post<{ calculation: OrderCalculation; normalizedParams: CalculatorParams }>(
       "/orders/calculate",
@@ -235,21 +220,9 @@ export function ServiceCalculatorPage() {
       />
 
       {needsSubscription && (
-        <Alert
-          severity="warning"
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <AddCardIcon />}
-              onClick={activateSubscription}
-              disabled={submitting}
-            >
-              Подключить
-            </Button>
-          }
-        >
-          Для расчета и создания заказа нужна активная подписка.
+        <Alert severity="warning">
+          Для расчёта и создания заказа нужна активная подписка. Тариф назначает администратор — напишите нам или
+          дождитесь выдачи доступа в кабинете.
         </Alert>
       )}
 

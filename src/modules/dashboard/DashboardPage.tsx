@@ -1,4 +1,3 @@
-import AddCardIcon from "@mui/icons-material/AddCard";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CalculateIcon from "@mui/icons-material/Calculate";
@@ -11,7 +10,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   LinearProgress,
   Paper,
   Stack,
@@ -43,7 +41,6 @@ export function DashboardPage() {
   const [plans, setPlans] = useState<SubscriptionPlanPolicy[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activatingPlan, setActivatingPlan] = useState("");
   const [error, setError] = useState("");
 
   const loadDashboard = useCallback(async () => {
@@ -69,19 +66,6 @@ export function DashboardPage() {
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
-
-  const activateSubscription = async (plan: SubscriptionPlanPolicy) => {
-    setActivatingPlan(plan.plan);
-    setError("");
-    try {
-      await api.post("/subscriptions", { plan: plan.plan, paymentReference: `web-${plan.plan}-${Date.now()}` });
-      await loadDashboard();
-    } catch {
-      setError("Не удалось подключить подписку.");
-    } finally {
-      setActivatingPlan("");
-    }
-  };
 
   const activeOrders = orders.filter((order) => order.status !== "done").length;
   const doneOrders = orders.filter((order) => order.status === "done").length;
@@ -132,17 +116,25 @@ export function DashboardPage() {
                         </Typography>
                       ) : (
                         <Typography color="text.secondary">
-                          Выберите тариф, чтобы открыть расчеты, заказы и загрузку документов.
+                          Тариф назначает администратор. После выдачи доступа откроются расчёты, заказы и загрузка
+                          документов.
                         </Typography>
                       )}
                     </Stack>
                     <Stack spacing={1.5} alignItems={{ xs: "stretch", md: "flex-end" }}>
                       <Typography variant="h4" color={subscription ? "success.main" : "warning.main"}>
-                        {subscription ? "Active" : "No plan"}
+                        {subscription ? "Active" : "Нет тарифа"}
                       </Typography>
                       {subscription && access && <Chip label={access.plan.plan} color="primary" />}
                     </Stack>
                   </Stack>
+
+                  {!subscription && (
+                    <Alert severity="info">
+                      Напишите нам или дождитесь, пока администратор подключит подходящий тариф. Самостоятельная
+                      активация отключена.
+                    </Alert>
+                  )}
 
                   {access && (
                     <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(3, 1fr)" }} gap={2}>
@@ -151,7 +143,7 @@ export function DashboardPage() {
                         ["Заказы", access.usage.orders.used, access.usage.orders.limit],
                         ["Документы", access.usage.uploadFiles.used, access.usage.uploadFiles.limit]
                       ].map(([label, used, limit]) => (
-                        <Paper key={label} elevation={0} sx={{ p: 2, bgcolor: "background.default" }}>
+                        <Paper key={String(label)} elevation={0} sx={{ p: 2, bgcolor: "background.default" }}>
                           <Typography fontWeight={900}>{label}</Typography>
                           <Typography variant="body2" color="text.secondary" mb={1}>
                             {used} из {limit}
@@ -165,7 +157,7 @@ export function DashboardPage() {
               </CardContent>
             </Card>
 
-            {!subscription && plans.length > 0 && (
+            {plans.length > 0 && (
               <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(3, 1fr)" }} gap={2}>
                 {plans.map((plan) => (
                   <Card key={plan.plan} sx={{ borderColor: plan.plan === "business" ? "primary.main" : "divider" }}>
@@ -185,14 +177,13 @@ export function DashboardPage() {
                             </Typography>
                           ))}
                         </Stack>
-                        <Button
-                          variant={plan.plan === "business" ? "contained" : "outlined"}
-                          startIcon={activatingPlan === plan.plan ? <CircularProgress size={18} color="inherit" /> : <AddCardIcon />}
-                          onClick={() => activateSubscription(plan)}
-                          disabled={Boolean(activatingPlan)}
-                        >
-                          Подключить
-                        </Button>
+                        {subscription?.plan === plan.plan ? (
+                          <Chip label="Ваш текущий тариф" color="success" />
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            Назначается администратором
+                          </Typography>
+                        )}
                       </Stack>
                     </CardContent>
                   </Card>
@@ -254,7 +245,7 @@ export function DashboardPage() {
               {
                 icon: <CalculateIcon />,
                 title: "Калькулятор услуг",
-                text: "Доступ к услугам зависит от тарифа. Заблокированные услуги можно открыть повышением плана.",
+                text: "Доступ к услугам зависит от тарифа, который выдал администратор.",
                 to: "/services",
                 action: "Рассчитать"
               },

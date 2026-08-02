@@ -50,6 +50,7 @@ import { api, formatDateTime, formatMoney } from "../../shared/api/client";
 import { EmptyState } from "../../shared/components/EmptyState";
 import { PageHeader } from "../../shared/components/PageHeader";
 import { StatusChip } from "../../shared/components/StatusChip";
+import { AdminCatalogPanels } from "./AdminCatalogPanels";
 
 const statuses: OrderStatus[] = ["new", "in_progress", "need_info", "done"];
 const inputTypes: ServiceInputType[] = ["number", "text", "select"];
@@ -326,9 +327,10 @@ export function AdminPage() {
       {error && <Alert severity="error">{error}</Alert>}
 
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
-        <Tabs value={tab} onChange={(_event, value) => setTab(value)} sx={{ px: 2, borderBottom: "1px solid", borderColor: "divider" }}>
+        <Tabs value={tab} onChange={(_event, value) => setTab(value)} sx={{ px: 2, borderBottom: "1px solid", borderColor: "divider" }} variant="scrollable" allowScrollButtonsMobile>
           <Tab label="Заказы" />
           <Tab label="Услуги и цены" />
+          <Tab label="Клиенты и справочники" />
           <Tab label="Telegram" />
         </Tabs>
 
@@ -497,6 +499,15 @@ export function AdminPage() {
           )}
 
           {tab === 2 && (
+            <AdminCatalogPanels
+              onMessage={setMessage}
+              onError={setError}
+              savingId={savingId}
+              setSavingId={setSavingId}
+            />
+          )}
+
+          {tab === 3 && (
             <Stack spacing={2.5}>
               <Typography variant="h6">Telegram заявки</Typography>
               <Paper elevation={0} sx={{ p: { xs: 2.5, md: 3 }, bgcolor: "background.default", border: "1px solid", borderColor: "divider" }}>

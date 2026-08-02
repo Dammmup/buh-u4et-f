@@ -57,6 +57,12 @@ import {
 import { FormEvent, ReactNode, useState, useEffect } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { api } from "../../shared/api/client";
+import {
+  defaultLandingPricing,
+  defaultTaxRk,
+  type LandingPricingSettings,
+  type TaxRkSettings
+} from "../../shared/catalog/defaults";
 
 const navItems = [
   { label: "Что нужно", target: "services" },
@@ -110,16 +116,39 @@ const tariffOptions = {
   ]
 } as const;
 
-const tariffRates: Record<TariffForm, Record<TariffRegime, Record<TariffActivity, number>>> = {
-  ip: {
-    simplified: { service: 50000, trade: 75000, production: 130000 },
-    general: { service: 100000, trade: 140000, production: 170000 }
-  },
-  too: {
-    simplified: { service: 75000, trade: 100000, production: 145000 },
-    general: { service: 150000, trade: 200000, production: 230000 }
-  }
+let tariffRates = structuredClone(defaultLandingPricing.tariffRates);
+let landingCommercial = {
+  urgentSurchargeRate: defaultLandingPricing.urgentSurchargeRate,
+  digitalSubmissionPrice: defaultLandingPricing.digitalSubmissionPrice
 };
+
+let taxConstants: TaxRkSettings = { ...defaultTaxRk };
+
+function buildTaxLimits(tax: TaxRkSettings) {
+  return {
+    opvMax: tax.mzp * tax.opvMaxMzp * tax.opvRate,
+    vosmsMax: tax.mzp * tax.vosmsMaxMzp * tax.vosmsRate,
+    oosmsMax: tax.mzp * tax.oosmsMaxMzp * tax.oosmsRate,
+    socialContributionMin: tax.mzp * tax.socialContributionMinMzp * tax.socialContributionRate,
+    socialContributionMax: tax.mzp * tax.socialContributionMaxMzp * tax.socialContributionRate,
+    opvrMin: tax.mzp * tax.opvrMinMzp * tax.opvrRate,
+    opvrMax: tax.mzp * tax.opvrMaxMzp * tax.opvrRate,
+    standardDeduction: tax.mrp * tax.standardDeductionMrp,
+    monthlyProgressivePitThreshold: (tax.mrp * tax.progressivePitThresholdMrp) / 12
+  };
+}
+
+let taxLimits = buildTaxLimits(taxConstants);
+
+function applyPublicCatalog(settings: { tax: TaxRkSettings; landingPricing: LandingPricingSettings }) {
+  taxConstants = { ...defaultTaxRk, ...settings.tax };
+  taxLimits = buildTaxLimits(taxConstants);
+  tariffRates = structuredClone(settings.landingPricing.tariffRates);
+  landingCommercial = {
+    urgentSurchargeRate: settings.landingPricing.urgentSurchargeRate,
+    digitalSubmissionPrice: settings.landingPricing.digitalSubmissionPrice
+  };
+}
 
 const taxModes: { value: TaxMode; label: string }[] = [
   { value: "ip_usn", label: "ИП УСН" },
@@ -144,35 +173,6 @@ const monthOptions = [
   "Ноябрь",
   "Декабрь"
 ];
-
-const taxConstants = {
-  mrp: 4325,
-  mzp: 85000,
-  opvRate: 0.1,
-  vosmsRate: 0.02,
-  oosmsRate: 0.03,
-  socialContributionRate: 0.05,
-  socialTaxRate: 0.06,
-  opvrRate: 0.035,
-  unifiedPaymentRate: 0.248,
-  simplifiedIpRate: 0.04,
-  simplifiedTooRate: 0.03,
-  citRate: 0.2,
-  pitRate: 0.1,
-  highPitRate: 0.15
-};
-
-const taxLimits = {
-  opvMax: taxConstants.mzp * 50 * taxConstants.opvRate,
-  vosmsMax: taxConstants.mzp * 20 * taxConstants.vosmsRate,
-  oosmsMax: taxConstants.mzp * 40 * taxConstants.oosmsRate,
-  socialContributionMin: taxConstants.mzp * taxConstants.socialContributionRate,
-  socialContributionMax: taxConstants.mzp * 7 * taxConstants.socialContributionRate,
-  opvrMin: taxConstants.mzp * taxConstants.opvrRate,
-  opvrMax: taxConstants.mzp * 50 * taxConstants.opvrRate,
-  standardDeduction: taxConstants.mrp * 30,
-  monthlyProgressivePitThreshold: (taxConstants.mrp * 8500) / 12
-};
 
 const serviceCalculatorOptions: any[] = [];
 
@@ -543,7 +543,8 @@ function IconTile({ children, color = "primary" }: { children: ReactNode; color?
   );
 }
 
-function TariffCalculator() {
+function TariffCalculator({ catalogVersion }: { catalogVersion: number }) {
+  void catalogVersion;
   const [form, setForm] = useState<TariffForm>("ip");
   const [regime, setRegime] = useState<TariffRegime>("simplified");
   const [activity, setActivity] = useState<TariffActivity>("service");
@@ -777,9 +778,11 @@ function FrequentServicesSection() {
 interface ServiceCostCalculatorProps {
   dbServices: any[];
   loading: boolean;
+  catalogVersion: number;
 }
 
-function ServiceCostCalculator({ dbServices, loading }: ServiceCostCalculatorProps) {
+function ServiceCostCalculator({ dbServices, loading, catalogVersion }: ServiceCostCalculatorProps) {
+  void catalogVersion;
   const calculatorSlugs = [
     "forma-328-dynamic",
     "hr-payroll-once",
@@ -852,9 +855,9 @@ function ServiceCostCalculator({ dbServices, loading }: ServiceCostCalculatorPro
     ? Math.ceil(chargeableUnits / selectedService.unitStep)
     : chargeableUnits;
   const parameterPrice = roundMoney(pricedUnits * (selectedService.unitPrice ?? 0));
-  const digitalSubmissionPrice = withDigitalSubmission ? 0 : 0;
+  const digitalSubmissionPrice = withDigitalSubmission ? landingCommercial.digitalSubmissionPrice : 0;
   const subtotal = selectedService.basePrice + parameterPrice + digitalSubmissionPrice;
-  const urgentPrice = urgent ? roundMoney(subtotal * 0.5) : 0;
+  const urgentPrice = urgent ? roundMoney(subtotal * landingCommercial.urgentSurchargeRate) : 0;
   const total = subtotal + urgentPrice;
   const phoneIsValid = isValidPhone(phone);
   const showPhoneError = phone.trim().length > 0 && !phoneIsValid;
@@ -1042,6 +1045,12 @@ function ServiceCostCalculator({ dbServices, loading }: ServiceCostCalculatorPro
                       <Typography fontWeight={900}>{formatTariff(parameterPrice)}</Typography>
                     </Stack>
                   )}
+                  {withDigitalSubmission && digitalSubmissionPrice > 0 && (
+                    <Stack direction="row" justifyContent="space-between" gap={2}>
+                      <Typography color="text.secondary">Сдача с ЭЦП</Typography>
+                      <Typography fontWeight={900}>{formatTariff(digitalSubmissionPrice)}</Typography>
+                    </Stack>
+                  )}
                   {urgent && (
                     <Stack direction="row" justifyContent="space-between" gap={2}>
                       <Typography color="text.secondary">Срочность</Typography>
@@ -1080,10 +1089,11 @@ interface TaxCalculationResult {
   warnings: string[];
 }
 
-function TaxCalculator() {
+function TaxCalculator({ catalogVersion }: { catalogVersion: number }) {
+  void catalogVersion;
   const [mode, setMode] = useState<TaxMode>("ip_our");
   const [direction, setDirection] = useState<CalculationDirection>("direct");
-  const [year, setYear] = useState("2026");
+  const [year, setYear] = useState(String(taxConstants.year));
   const [month, setMonth] = useState("Май");
   const [income, setIncome] = useState("");
   const [expenses, setExpenses] = useState("");
@@ -1141,15 +1151,15 @@ function TaxCalculator() {
       const socialContribution = pensioner
         ? 0
         : clamp((Math.max(taxConstants.mzp, businessIncome) - Math.min(opv, taxConstants.mzp * taxConstants.opvRate)) * taxConstants.socialContributionRate, taxLimits.socialContributionMin, taxLimits.socialContributionMax);
-      const vosms = pensioner ? 0 : taxConstants.mzp * 1.4 * 0.05;
+      const vosms = pensioner ? 0 : taxConstants.mzp * taxConstants.ipVosmsMzpFactor * 0.05;
       const opvr = pensioner ? 0 : taxLimits.opvrMin;
-      const socialTax = taxConstants.mrp * 2;
+      const socialTax = taxConstants.mrp * taxConstants.ipSocialTaxMrp;
 
-      add("ОПВ за ИП", opv, "10%, максимум 425 000 тг");
+      add("ОПВ за ИП", opv, "10%, с учетом потолка");
       add("СО за ИП", socialContribution, "5% с учетом лимитов");
       add("ВОСМС за ИП", vosms, "5% от 1.4 МЗП");
       add("ОПВР за ИП", opvr, "3.5% от 1 МЗП");
-      add("Социальный налог за ИП", socialTax, "2 МРП");
+      add("Социальный налог за ИП", socialTax, `${taxConstants.ipSocialTaxMrp} МРП`);
     }
 
     if (includeStaffEmployee && salaryAmount > 0) {
@@ -1856,6 +1866,7 @@ export function LandingPage() {
 
   const [dbServices, setDbServices] = useState<any[]>([]);
   const [dbServicesLoading, setDbServicesLoading] = useState(true);
+  const [catalogVersion, setCatalogVersion] = useState(0);
 
   useEffect(() => {
     api.get("/services")
@@ -1869,6 +1880,18 @@ export function LandingPage() {
       })
       .finally(() => {
         setDbServicesLoading(false);
+      });
+
+    api
+      .get<{ settings: { tax: TaxRkSettings; landingPricing: LandingPricingSettings } }>("/settings/public")
+      .then((response) => {
+        if (response.data?.settings) {
+          applyPublicCatalog(response.data.settings);
+          setCatalogVersion((value) => value + 1);
+        }
+      })
+      .catch(() => {
+        // fallback defaults already applied
       });
   }, []);
 
@@ -2106,7 +2129,21 @@ export function LandingPage() {
 
       <SeasonalServicesSection />
 
-      <ServiceCostCalculator dbServices={dbServices} loading={dbServicesLoading} />
+      <ServiceCostCalculator
+        dbServices={dbServices}
+        loading={dbServicesLoading}
+        catalogVersion={catalogVersion}
+      />
+
+      <Box id="tax-law-calculator" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "background.default" }}>
+        <Container maxWidth="xl">
+          <SectionTitle
+            title="Налоговый калькулятор РК"
+            subtitle={`Справочный расчёт по ставкам ${taxConstants.year} года. Администратор может обновить МРП, МЗП и ставки в панели.`}
+          />
+          <TaxCalculator catalogVersion={catalogVersion} />
+        </Container>
+      </Box>
 
       <FrequentServicesSection />
 
@@ -2193,7 +2230,7 @@ export function LandingPage() {
       <Box id="pricing" component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: "background.default" }}>
         <Container maxWidth="xl">
           <SectionTitle title="Тарифы" subtitle="Выберите подходящий формат бухгалтерского сопровождения" />
-          <TariffCalculator />
+          <TariffCalculator catalogVersion={catalogVersion} />
           <Box display="grid" gridTemplateColumns={{ xs: "1fr", lg: "repeat(3, 1fr)" }} gap={3}>
             {pricing.map((plan) => (
               <Card key={plan.name} sx={{ position: "relative", overflow: "hidden", borderColor: plan.highlighted ? "primary.main" : "#F3F4F6", transform: { lg: plan.highlighted ? "scale(1.035)" : "none" } }}>
