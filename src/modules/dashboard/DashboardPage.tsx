@@ -137,6 +137,10 @@ export function DashboardPage() {
                   )}
 
                   {access && (
+                    <Stack spacing={1.5}>
+                      <Typography variant="body2" color="text.secondary">
+                        Лимиты обновятся {formatDateTime(access.usage.periodEnd)}
+                      </Typography>
                     <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(3, 1fr)" }} gap={2}>
                       {[
                         ["Расчеты", access.usage.calculations.used, access.usage.calculations.limit],
@@ -152,6 +156,7 @@ export function DashboardPage() {
                         </Paper>
                       ))}
                     </Box>
+                    </Stack>
                   )}
                 </Stack>
               </CardContent>
