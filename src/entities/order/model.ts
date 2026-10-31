@@ -71,6 +71,7 @@ export interface UploadedDocument {
   order: string;
   originalName: string;
   filename: string;
+  storage?: "local" | "blob";
   mimeType: string;
   size: number;
   createdAt: string;

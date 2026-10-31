@@ -46,6 +46,9 @@ export interface SubscriptionPlanPolicy {
 }
 
 export interface UsageSnapshot {
+  /** Limits reset on every billing month inside the paid term. */
+  periodStart: string;
+  periodEnd: string;
   calculations: { used: number; limit: number };
   orders: { used: number; limit: number };
   uploadFiles: { used: number; limit: number };

@@ -29,7 +29,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type { Order, OrderStatus, UploadedDocument } from "../../entities/order/model";
-import { api, formatDateTime, formatMoney, getApiErrorStatus } from "../../shared/api/client";
+import { api, formatDateTime, formatMoney, getApiErrorMessage, getApiErrorStatus } from "../../shared/api/client";
 import { EmptyState } from "../../shared/components/EmptyState";
 import { PageHeader } from "../../shared/components/PageHeader";
 import { StatusChip } from "../../shared/components/StatusChip";
@@ -42,11 +42,6 @@ const statusOptions: Array<{ value: "all" | OrderStatus; label: string }> = [
   { value: "done", label: "Готовые" }
 ];
 
-function fileHref(filename: string) {
-  const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
-  return `${apiUrl.replace(/\/api\/?$/, "")}/files/${filename}`;
-}
-
 export function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [documentsByOrder, setDocumentsByOrder] = useState<Record<string, UploadedDocument[]>>({});
@@ -55,6 +50,7 @@ export function OrdersPage() {
   const [documentsLoading, setDocumentsLoading] = useState<Record<string, boolean>>({});
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [downloadingId, setDownloadingId] = useState("");
 
   const loadOrders = useCallback(async () => {
     const response = await api.get<{ orders: Order[] }>("/orders");
@@ -106,12 +102,45 @@ export function OrdersPage() {
       setError(
         statusCode === 402
           ? "Для загрузки документов нужна активная подписка."
-          : statusCode === 403 || statusCode === 413
+          : statusCode === 403
             ? "Лимит загрузки документов по вашему тарифу исчерпан."
-            : "Не удалось загрузить документы."
+            : getApiErrorMessage(uploadError, "Не удалось загрузить документы.")
       );
     } finally {
       setDocumentsLoading((current) => ({ ...current, [orderId]: false }));
+    }
+  };
+
+  const openDocument = async (item: UploadedDocument) => {
+    setError("");
+    setDownloadingId(item._id);
+    try {
+      // Documents are private, so the bytes come back over an authenticated request
+      // rather than a public link.
+      const response = await api.get<Blob>(`/uploads/documents/${item._id}`, {
+        responseType: "blob"
+      });
+
+      const objectUrl = URL.createObjectURL(response.data);
+      const link = window.document.createElement("a");
+      link.href = objectUrl;
+      link.download = item.originalName;
+      window.document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (downloadError) {
+      // The response body is a Blob here, so the server's JSON message is not readable.
+      const statusCode = getApiErrorStatus(downloadError);
+      setError(
+        statusCode === 404
+          ? "Документ не найден или больше недоступен."
+          : statusCode === 403
+            ? "Нет доступа к этому документу."
+            : "Не удалось скачать документ."
+      );
+    } finally {
+      setDownloadingId("");
     }
   };
 
@@ -279,7 +308,13 @@ export function OrdersPage() {
                               <Stack direction="row" spacing={1.5} alignItems="center">
                                 <DescriptionIcon color="primary" />
                                 <Box flex={1} minWidth={0}>
-                                  <Link href={fileHref(document.filename)} target="_blank" rel="noopener noreferrer">
+                                  <Link
+                                    component="button"
+                                    type="button"
+                                    textAlign="left"
+                                    disabled={downloadingId === document._id}
+                                    onClick={() => openDocument(document)}
+                                  >
                                     {document.originalName}
                                   </Link>
                                   <Typography variant="caption" color="text.secondary" display="block">

@@ -1,7 +1,39 @@
 import axios from "axios";
 
+const DEV_API_URL = "http://localhost:3000/api";
+
+/**
+ * VITE_API_URL wins when set. Otherwise: the dev server talks to the local API,
+ * and a deployed build falls back to same-origin /api, so a production bundle never
+ * silently points at localhost.
+ */
+function resolveBaseUrl(): string {
+  const configured = import.meta.env.VITE_API_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/+$/, "");
+  }
+
+  if (import.meta.env.DEV) {
+    return DEV_API_URL;
+  }
+
+  return "/api";
+}
+
+export const apiBaseUrl = resolveBaseUrl();
+
+/** Origin serving the API, used for non-API assets such as /files. */
+export function apiOrigin(): string {
+  const withoutApi = apiBaseUrl.replace(/\/api$/, "");
+  if (withoutApi.startsWith("http")) {
+    return withoutApi;
+  }
+
+  return `${window.location.origin}${withoutApi}`;
+}
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:3000/api"
+  baseURL: apiBaseUrl
 });
 
 api.interceptors.request.use((config) => {
